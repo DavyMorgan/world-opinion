@@ -226,17 +226,34 @@ Format your response as JSON with the following structure:
 
 async function searchPolymarket(keywords) {
   try {
-    const allMarkets = [];
+    const allEvents = [];
 
     // Search for each keyword (use more keywords since search is now effective)
     for (const keyword of keywords.slice(0, 5)) {
-      const markets = await searchPolymarketByKeyword(keyword);
-      allMarkets.push(...markets);
+      const events = await searchPolymarketByKeyword(keyword);
+      allEvents.push(...events);
     }
 
-    // Remove duplicates by condition ID and limit results
-    const uniqueMarkets = Array.from(new Map(allMarkets.map(m => [m.id, m])).values());
-    return uniqueMarkets.slice(0, 8); // Return more results since they're relevant
+    // Remove duplicates by event ID and merge markets from same event
+    const eventMap = new Map();
+    for (const event of allEvents) {
+      if (eventMap.has(event.eventId)) {
+        // Merge markets from same event found via different keywords
+        const existing = eventMap.get(event.eventId);
+        const existingMarketIds = new Set(existing.markets.map(m => m.id));
+        for (const market of event.markets) {
+          if (!existingMarketIds.has(market.id)) {
+            existing.markets.push(market);
+          }
+        }
+      } else {
+        eventMap.set(event.eventId, event);
+      }
+    }
+
+    // Convert to array and limit results
+    const uniqueEvents = Array.from(eventMap.values());
+    return uniqueEvents.slice(0, 8);
 
   } catch (error) {
     console.error('Polymarket search error:', error);
@@ -256,25 +273,39 @@ async function searchPolymarketByKeyword(keyword) {
     }
 
     const data = await response.json();
-    const markets = [];
+    const events = [];
 
-    // Extract markets from events in search results
+    // Extract events with their markets from search results
     for (const event of (data.events || [])) {
+      const markets = [];
+
       for (const market of (event.markets || [])) {
         if (market.closed) continue; // Skip closed markets
 
         markets.push({
           id: market.conditionId || market.id,
-          title: market.question,
-          description: market.description,
+          title: market.groupItemTitle || market.question,
+          question: market.question,
           probability: calculateProbabilityFromPrices(market.outcomePrices),
-          volume: market.volume || event.volume || '0',
-          url: `https://polymarket.com/event/${event.slug}`
+          volume: market.volume || '0',
+          closed: market.closed
+        });
+      }
+
+      if (markets.length > 0) {
+        events.push({
+          eventId: event.id,
+          eventTitle: event.title,
+          eventSlug: event.slug,
+          eventImage: event.image || event.icon,
+          eventVolume: event.volume || '0',
+          url: `https://polymarket.com/event/${event.slug}`,
+          markets: markets
         });
       }
     }
 
-    return markets;
+    return events;
   } catch (error) {
     console.error('Error searching Polymarket:', error);
     return [];
@@ -296,7 +327,7 @@ function calculateProbabilityFromPrices(outcomePrices) {
   return 50;
 }
 
-function displayResults(analysis, markets) {
+function displayResults(analysis, events) {
   const resultsDiv = document.getElementById('results');
   const analysisDiv = document.getElementById('analysisText');
   const marketsListDiv = document.getElementById('marketsList');
@@ -304,20 +335,52 @@ function displayResults(analysis, markets) {
   // Display analysis
   analysisDiv.textContent = analysis.summary;
 
-  // Display markets
-  if (markets.length === 0) {
+  // Display events/markets
+  if (events.length === 0) {
     marketsListDiv.innerHTML = '<div class="no-markets">No related prediction markets found</div>';
   } else {
-    marketsListDiv.innerHTML = markets.map(market => `
-      <div class="market-card">
-        <div class="market-title">${escapeHtml(market.title)}</div>
-        <div class="market-probability">${market.probability}%</div>
-        <div class="market-info">
-          <span>Volume: $${formatVolume(market.volume)}</span>
-        </div>
-        <a href="${market.url}" target="_blank" class="market-link">View on Polymarket →</a>
-      </div>
-    `).join('');
+    marketsListDiv.innerHTML = events.map(event => {
+      // Sort markets by probability (highest first)
+      const sortedMarkets = [...event.markets].sort((a, b) => b.probability - a.probability);
+
+      // For events with multiple markets, show grouped view
+      if (sortedMarkets.length > 1) {
+        return `
+          <div class="event-card">
+            <div class="event-header">
+              ${event.eventImage ? `<img class="event-image" src="${event.eventImage}" alt="" />` : ''}
+              <div class="event-info">
+                <div class="event-title">${escapeHtml(event.eventTitle)}</div>
+                <div class="event-volume">$${formatVolume(event.eventVolume)} Vol.</div>
+              </div>
+            </div>
+            <div class="outcomes-table">
+              ${sortedMarkets.map(market => `
+                <div class="outcome-row">
+                  <span class="outcome-label">${escapeHtml(market.title)}</span>
+                  <span class="outcome-probability">${market.probability}%</span>
+                  <span class="outcome-volume">$${formatVolume(market.volume)}</span>
+                </div>
+              `).join('')}
+            </div>
+            <a href="${event.url}" target="_blank" class="market-link">View on Polymarket →</a>
+          </div>
+        `;
+      } else {
+        // For single-market events, use original card style
+        const market = sortedMarkets[0];
+        return `
+          <div class="market-card">
+            <div class="market-title">${escapeHtml(market.question || event.eventTitle)}</div>
+            <div class="market-probability">${market.probability}%</div>
+            <div class="market-info">
+              <span>Volume: $${formatVolume(market.volume || event.eventVolume)}</span>
+            </div>
+            <a href="${event.url}" target="_blank" class="market-link">View on Polymarket →</a>
+          </div>
+        `;
+      }
+    }).join('');
   }
 
   // Show results, hide loading
