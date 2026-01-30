@@ -71,11 +71,14 @@ async function analyzeCurrentTab() {
       throw new Error('No active tab found');
     }
 
-    // Extract page content
-    const pageContent = await extractPageContent(tab);
+    // Extract page content and capture screenshot
+    const [pageContent, screenshot] = await Promise.all([
+      extractPageContent(tab),
+      captureScreenshot()
+    ]);
 
-    // Analyze with Gemini
-    const analysis = await analyzeWithGemini(pageContent, tab.title, tab.url);
+    // Analyze with Gemini (text + image)
+    const analysis = await analyzeWithGemini(pageContent, tab.title, tab.url, screenshot);
 
     // Search Polymarket
     const markets = await searchPolymarket(analysis.keywords);
@@ -87,6 +90,17 @@ async function analyzeCurrentTab() {
     console.error('Analysis error:', error);
     showError(error.message);
     hideLoading();
+  }
+}
+
+async function captureScreenshot() {
+  try {
+    const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 80 });
+    // Extract base64 data from data URL (remove "data:image/jpeg;base64," prefix)
+    return dataUrl.split(',')[1];
+  } catch (error) {
+    console.error('Error capturing screenshot:', error);
+    return null; // Continue without screenshot if capture fails
   }
 }
 
@@ -122,17 +136,17 @@ async function extractPageContent(tab) {
   }
 }
 
-async function analyzeWithGemini(pageContent, pageTitle, pageUrl) {
-  const prompt = `Analyze the following web page content and extract key topics, entities, and events that could be related to prediction markets on Polymarket.
+async function analyzeWithGemini(pageContent, pageTitle, pageUrl, screenshot) {
+  const prompt = `Analyze this web page (both the screenshot and extracted text) and extract key topics, entities, and events that could be related to prediction markets on Polymarket.
 
 Page Title: ${pageTitle}
 Page URL: ${pageUrl}
 Page Description: ${pageContent.description}
 
-Content:
+Extracted Text:
 ${pageContent.text}
 
-Please provide:
+Please analyze both the visual content (charts, images, layout) and the text to provide:
 1. A brief summary (2-3 sentences) of what this page is about
 2. 3-5 keywords or phrases that could be used to search for related prediction markets
 3. Specific entities, events, or topics mentioned that people might bet on
@@ -144,6 +158,18 @@ Format your response as JSON with the following structure:
   "topics": ["topic1", "topic2", "topic3"]
 }`;
 
+  // Build parts array with text, and optionally image
+  const parts = [{ text: prompt }];
+
+  if (screenshot) {
+    parts.unshift({
+      inline_data: {
+        mime_type: 'image/jpeg',
+        data: screenshot
+      }
+    });
+  }
+
   try {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
@@ -152,9 +178,7 @@ Format your response as JSON with the following structure:
       },
       body: JSON.stringify({
         contents: [{
-          parts: [{
-            text: prompt
-          }]
+          parts: parts
         }],
         generationConfig: {
           temperature: 0.7,
