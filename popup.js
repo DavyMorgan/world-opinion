@@ -1,0 +1,336 @@
+// Popup script - handles user interactions
+document.addEventListener('DOMContentLoaded', init);
+
+let geminiApiKey = '';
+
+async function init() {
+  // Load saved settings
+  const settings = await chrome.storage.local.get(['geminiApiKey']);
+  if (settings.geminiApiKey) {
+    geminiApiKey = settings.geminiApiKey;
+    document.getElementById('geminiKey').value = '••••••••';
+  }
+
+  // Setup event listeners
+  document.getElementById('settingsBtn').addEventListener('click', toggleSettings);
+  document.getElementById('saveSettings').addEventListener('click', saveSettings);
+  document.getElementById('analyzeBtn').addEventListener('click', analyzeCurrentTab);
+}
+
+function toggleSettings() {
+  const panel = document.getElementById('settingsPanel');
+  panel.classList.toggle('hidden');
+}
+
+async function saveSettings() {
+  const geminiKey = document.getElementById('geminiKey').value;
+  const messageDiv = document.getElementById('settingsMessage');
+  
+  if (!geminiKey || geminiKey === '••••••••') {
+    showMessage(messageDiv, 'Please enter a valid API key', 'error');
+    return;
+  }
+
+  try {
+    await chrome.storage.local.set({ geminiApiKey: geminiKey });
+    geminiApiKey = geminiKey;
+    showMessage(messageDiv, 'Settings saved successfully!', 'success');
+    
+    // Hide message after 2 seconds
+    setTimeout(() => {
+      messageDiv.className = 'message';
+      messageDiv.textContent = '';
+    }, 2000);
+  } catch (error) {
+    showMessage(messageDiv, 'Error saving settings: ' + error.message, 'error');
+  }
+}
+
+function showMessage(element, message, type) {
+  element.textContent = message;
+  element.className = `message ${type}`;
+}
+
+async function analyzeCurrentTab() {
+  // Check if API key is configured
+  if (!geminiApiKey) {
+    showError('Please configure your Gemini API key in settings first.');
+    return;
+  }
+
+  try {
+    // Show loading state
+    showLoading();
+    hideError();
+    hideResults();
+
+    // Get current tab
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    if (!tab) {
+      throw new Error('No active tab found');
+    }
+
+    // Extract page content
+    const pageContent = await extractPageContent(tab);
+    
+    // Analyze with Gemini
+    const analysis = await analyzeWithGemini(pageContent, tab.title, tab.url);
+    
+    // Search Polymarket
+    const markets = await searchPolymarket(analysis.keywords);
+    
+    // Display results
+    displayResults(analysis, markets);
+    
+  } catch (error) {
+    console.error('Analysis error:', error);
+    showError(error.message);
+    hideLoading();
+  }
+}
+
+async function extractPageContent(tab) {
+  try {
+    // Inject content script to extract page text
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        // Extract meaningful text from the page
+        const title = document.title;
+        const metaDescription = document.querySelector('meta[name="description"]')?.content || '';
+        
+        // Get main content (try to avoid navigation, headers, footers)
+        const mainContent = document.querySelector('main, article, [role="main"]');
+        const bodyText = mainContent ? mainContent.innerText : document.body.innerText;
+        
+        // Limit text length to avoid overwhelming the API
+        const text = bodyText.substring(0, 5000);
+        
+        return {
+          title,
+          description: metaDescription,
+          text
+        };
+      }
+    });
+
+    return results[0].result;
+  } catch (error) {
+    console.error('Error extracting page content:', error);
+    throw new Error('Failed to extract page content. The page may not allow script injection.');
+  }
+}
+
+async function analyzeWithGemini(pageContent, pageTitle, pageUrl) {
+  const prompt = `Analyze the following web page content and extract key topics, entities, and events that could be related to prediction markets on Polymarket.
+
+Page Title: ${pageTitle}
+Page URL: ${pageUrl}
+Page Description: ${pageContent.description}
+
+Content:
+${pageContent.text}
+
+Please provide:
+1. A brief summary (2-3 sentences) of what this page is about
+2. 3-5 keywords or phrases that could be used to search for related prediction markets
+3. Specific entities, events, or topics mentioned that people might bet on
+
+Format your response as JSON with the following structure:
+{
+  "summary": "Brief summary here",
+  "keywords": ["keyword1", "keyword2", "keyword3"],
+  "topics": ["topic1", "topic2", "topic3"]
+}`;
+
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    const generatedText = data.candidates[0].content.parts[0].text;
+    
+    // Try to extract JSON from the response
+    const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    
+    // Fallback if JSON parsing fails
+    return {
+      summary: generatedText.substring(0, 200),
+      keywords: [pageTitle],
+      topics: []
+    };
+  } catch (error) {
+    console.error('Gemini API error:', error);
+    throw new Error(`Failed to analyze content with Gemini: ${error.message}`);
+  }
+}
+
+async function searchPolymarket(keywords) {
+  try {
+    const allMarkets = [];
+    
+    // Search for each keyword
+    for (const keyword of keywords.slice(0, 3)) { // Limit to first 3 keywords
+      const markets = await searchPolymarketByKeyword(keyword);
+      allMarkets.push(...markets);
+    }
+    
+    // Remove duplicates and limit results
+    const uniqueMarkets = Array.from(new Map(allMarkets.map(m => [m.id, m])).values());
+    return uniqueMarkets.slice(0, 5);
+    
+  } catch (error) {
+    console.error('Polymarket search error:', error);
+    throw new Error(`Failed to search Polymarket: ${error.message}`);
+  }
+}
+
+async function searchPolymarketByKeyword(keyword) {
+  try {
+    // Use the Polymarket CLOB API to search markets
+    const response = await fetch(`https://clob.polymarket.com/markets?limit=5&offset=0&closed=false`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Polymarket API error: ${response.statusText}`);
+    }
+
+    const markets = await response.json();
+    
+    // Filter markets by keyword relevance
+    const filtered = markets.filter(market => {
+      const title = market.question?.toLowerCase() || '';
+      const description = market.description?.toLowerCase() || '';
+      const keywordLower = keyword.toLowerCase();
+      return title.includes(keywordLower) || description.includes(keywordLower);
+    });
+    
+    // Map to our format
+    return filtered.map(market => ({
+      id: market.condition_id || market.id,
+      title: market.question,
+      description: market.description,
+      probability: calculateProbability(market),
+      volume: market.volume || '0',
+      url: `https://polymarket.com/event/${market.slug || market.condition_id}`
+    }));
+    
+  } catch (error) {
+    console.error('Error searching Polymarket:', error);
+    return [];
+  }
+}
+
+function calculateProbability(market) {
+  // Try to get probability from different possible fields
+  if (market.outcomes && market.outcomes.length > 0) {
+    // Calculate from outcomes prices
+    const yesOutcome = market.outcomes.find(o => o.name === 'Yes');
+    if (yesOutcome && yesOutcome.price) {
+      return Math.round(parseFloat(yesOutcome.price) * 100);
+    }
+  }
+  
+  // Try other probability fields
+  if (market.probability !== undefined) {
+    return Math.round(market.probability * 100);
+  }
+  
+  // Default to 50% if we can't determine
+  return 50;
+}
+
+function displayResults(analysis, markets) {
+  const resultsDiv = document.getElementById('results');
+  const analysisDiv = document.getElementById('analysisText');
+  const marketsListDiv = document.getElementById('marketsList');
+  
+  // Display analysis
+  analysisDiv.textContent = analysis.summary;
+  
+  // Display markets
+  if (markets.length === 0) {
+    marketsListDiv.innerHTML = '<div class="no-markets">No related prediction markets found</div>';
+  } else {
+    marketsListDiv.innerHTML = markets.map(market => `
+      <div class="market-card">
+        <div class="market-title">${escapeHtml(market.title)}</div>
+        <div class="market-probability">${market.probability}%</div>
+        <div class="market-info">
+          <span>Volume: $${formatVolume(market.volume)}</span>
+        </div>
+        <a href="${market.url}" target="_blank" class="market-link">View on Polymarket →</a>
+      </div>
+    `).join('');
+  }
+  
+  // Show results, hide loading
+  resultsDiv.classList.remove('hidden');
+  hideLoading();
+}
+
+function formatVolume(volume) {
+  const num = parseFloat(volume);
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K';
+  }
+  return num.toFixed(0);
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function showLoading() {
+  document.getElementById('loading').classList.remove('hidden');
+}
+
+function hideLoading() {
+  document.getElementById('loading').classList.add('hidden');
+}
+
+function showError(message) {
+  const errorDiv = document.getElementById('error');
+  errorDiv.textContent = message;
+  errorDiv.classList.remove('hidden');
+}
+
+function hideError() {
+  document.getElementById('error').classList.add('hidden');
+}
+
+function hideResults() {
+  document.getElementById('results').classList.add('hidden');
+}

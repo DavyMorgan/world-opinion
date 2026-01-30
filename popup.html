@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Insight</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Market Insight</h1>
+      <p class="subtitle">Polymarket Predictions</p>
+    </header>
+    
+    <div class="settings-section">
+      <button id="settingsBtn" class="settings-btn">⚙️ Settings</button>
+    </div>
+
+    <div id="settingsPanel" class="settings-panel hidden">
+      <h3>API Configuration</h3>
+      <div class="input-group">
+        <label for="geminiKey">Gemini API Key:</label>
+        <input type="password" id="geminiKey" placeholder="Enter your Gemini API key">
+      </div>
+      <button id="saveSettings" class="btn btn-primary">Save Settings</button>
+      <div id="settingsMessage" class="message"></div>
+    </div>
+
+    <div id="mainContent">
+      <button id="analyzeBtn" class="btn btn-primary btn-large">
+        🔍 Analyze Current Tab
+      </button>
+
+      <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <p>Analyzing content and searching markets...</p>
+      </div>
+
+      <div id="results" class="results hidden">
+        <div id="analysis" class="section">
+          <h3>Content Analysis</h3>
+          <p id="analysisText"></p>
+        </div>
+
+        <div id="markets" class="section">
+          <h3>Related Prediction Markets</h3>
+          <div id="marketsList"></div>
+        </div>
+      </div>
+
+      <div id="error" class="error hidden"></div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
