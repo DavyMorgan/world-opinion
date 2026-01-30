@@ -182,7 +182,7 @@ Format your response as JSON with the following structure:
         }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 1024
+          maxOutputTokens: 2048
         }
       })
     });
@@ -195,15 +195,26 @@ Format your response as JSON with the following structure:
     const data = await response.json();
     const generatedText = data.candidates[0].content.parts[0].text;
 
+    // Remove markdown code fences if present
+    let cleanedText = generatedText
+      .replace(/^```json\s*/i, '')
+      .replace(/```\s*$/, '')
+      .trim();
+
     // Try to extract JSON from the response
-    const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+    const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        console.error('JSON parse error:', e);
+      }
     }
 
-    // Fallback if JSON parsing fails
+    // Smarter fallback - try to extract summary from partial JSON
+    const summaryMatch = cleanedText.match(/"summary"\s*:\s*"([^"]+)/);
     return {
-      summary: generatedText.substring(0, 200),
+      summary: summaryMatch ? summaryMatch[1] : 'Unable to analyze this page.',
       keywords: [pageTitle],
       topics: []
     };
