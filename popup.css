@@ -16,6 +16,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow-y: hidden;
+  position: relative;
 }
 
 header {
@@ -60,11 +61,28 @@ footer {
 }
 
 .settings-panel {
-  background: #f9f9f9;
+  position: absolute;
+  bottom: 50px;
+  left: 15px;
+  right: 15px;
+  background: white;
   padding: 20px;
-  margin: 15px 20px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid #e0e0e0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .settings-panel h3 {
@@ -74,7 +92,7 @@ footer {
 }
 
 .input-group {
-  margin-bottom: 15px;
+  margin-bottom: 0;
 }
 
 .input-group label {
@@ -85,8 +103,14 @@ footer {
   font-weight: 500;
 }
 
+.input-with-action {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .input-group input {
-  width: 100%;
+  flex: 1;
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 5px;
@@ -96,6 +120,43 @@ footer {
 .input-group input:focus {
   outline: none;
   border-color: #667eea;
+}
+
+.save-icon-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 5px;
+  padding: 8px;
+  cursor: pointer;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s, transform 0.2s;
+  flex-shrink: 0;
+}
+
+.save-icon-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.save-icon-btn:active {
+  transform: translateY(0);
+}
+
+.save-icon-btn .icon-check {
+  color: #4ade80;
+}
+
+.save-icon-btn.saved {
+  background: #22c55e;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }
 
 #mainContent {

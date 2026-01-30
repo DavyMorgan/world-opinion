@@ -24,31 +24,35 @@ function toggleSettings() {
 
 async function saveSettings() {
   const geminiKey = document.getElementById('geminiKey').value;
-  const messageDiv = document.getElementById('settingsMessage');
+  const saveBtn = document.getElementById('saveSettings');
+  const iconSave = saveBtn.querySelector('.icon-save');
+  const iconCheck = saveBtn.querySelector('.icon-check');
 
   if (!geminiKey || geminiKey === '••••••••') {
-    showMessage(messageDiv, 'Please enter a valid API key', 'error');
+    // Shake the button to indicate error
+    saveBtn.style.animation = 'shake 0.3s';
+    setTimeout(() => saveBtn.style.animation = '', 300);
     return;
   }
 
   try {
     await chrome.storage.local.set({ geminiApiKey: geminiKey });
     geminiApiKey = geminiKey;
-    showMessage(messageDiv, 'Settings saved successfully!', 'success');
 
-    // Hide message after 2 seconds
+    // Show checkmark icon
+    iconSave.classList.add('hidden');
+    iconCheck.classList.remove('hidden');
+    saveBtn.classList.add('saved');
+
+    // Revert to save icon after 2 seconds
     setTimeout(() => {
-      messageDiv.className = 'message';
-      messageDiv.textContent = '';
+      iconSave.classList.remove('hidden');
+      iconCheck.classList.add('hidden');
+      saveBtn.classList.remove('saved');
     }, 2000);
   } catch (error) {
-    showMessage(messageDiv, 'Error saving settings: ' + error.message, 'error');
+    console.error('Error saving settings:', error);
   }
-}
-
-function showMessage(element, message, type) {
-  element.textContent = message;
-  element.className = `message ${type}`;
 }
 
 async function analyzeCurrentTab() {
