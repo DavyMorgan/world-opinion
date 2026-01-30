@@ -2,19 +2,26 @@
 document.addEventListener('DOMContentLoaded', init);
 
 let geminiApiKey = '';
+let showAnalysis = false;
 
 async function init() {
   // Load saved settings
-  const settings = await chrome.storage.local.get(['geminiApiKey']);
+  const settings = await chrome.storage.local.get(['geminiApiKey', 'showAnalysis']);
   if (settings.geminiApiKey) {
     geminiApiKey = settings.geminiApiKey;
     document.getElementById('geminiKey').value = '••••••••';
   }
+  showAnalysis = settings.showAnalysis || false;
+  document.getElementById('showAnalysis').checked = showAnalysis;
 
   // Setup event listeners
   document.getElementById('settingsBtn').addEventListener('click', toggleSettings);
   document.getElementById('saveSettings').addEventListener('click', saveSettings);
   document.getElementById('analyzeBtn').addEventListener('click', analyzeCurrentTab);
+  document.getElementById('showAnalysis').addEventListener('change', async (e) => {
+    showAnalysis = e.target.checked;
+    await chrome.storage.local.set({ showAnalysis });
+  });
 }
 
 function toggleSettings() {
@@ -348,11 +355,17 @@ function calculateProbabilityFromPrices(outcomePrices) {
 
 function displayResults(analysis, events) {
   const resultsDiv = document.getElementById('results');
+  const analysisSection = document.getElementById('analysis');
   const analysisDiv = document.getElementById('analysisText');
   const marketsListDiv = document.getElementById('marketsList');
 
-  // Display analysis
-  analysisDiv.textContent = analysis.summary;
+  // Display analysis (conditionally)
+  if (showAnalysis) {
+    analysisDiv.textContent = analysis.summary;
+    analysisSection.classList.remove('hidden');
+  } else {
+    analysisSection.classList.add('hidden');
+  }
 
   // Display events/markets
   if (events.length === 0) {
