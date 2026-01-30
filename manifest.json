@@ -10,7 +10,7 @@
     "sidePanel"
   ],
   "host_permissions": [
-    "https://*/*"
+    "<all_urls>"
   ],
   "action": {
     "default_icon": {

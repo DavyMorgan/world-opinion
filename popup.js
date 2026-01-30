@@ -111,6 +111,13 @@ async function analyzeCurrentTab() {
 async function captureScreenshot() {
   try {
     const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 80 });
+
+    // Display screenshot in loading area
+    const screenshotPreview = document.getElementById('screenshotPreview');
+    const screenshotImg = document.getElementById('screenshotImg');
+    screenshotImg.src = dataUrl;
+    screenshotPreview.classList.remove('hidden');
+
     // Extract base64 data from data URL (remove "data:image/jpeg;base64," prefix)
     return dataUrl.split(',')[1];
   } catch (error) {
@@ -481,6 +488,12 @@ function resetProgress() {
   const connectors = document.querySelectorAll('.milestone-connector');
   milestones.forEach(m => m.classList.remove('active', 'completed'));
   connectors.forEach(c => c.classList.remove('active'));
+
+  // Hide screenshot preview
+  const screenshotPreview = document.getElementById('screenshotPreview');
+  if (screenshotPreview) {
+    screenshotPreview.classList.add('hidden');
+  }
 }
 
 function showError(message) {
