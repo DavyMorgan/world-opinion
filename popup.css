@@ -7,14 +7,14 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-width: 400px;
-  max-width: 500px;
+  width: 100%;
 }
 
 .container {
   background: white;
-  min-height: 400px;
-  max-height: 600px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
 }
 
@@ -35,23 +35,28 @@ h1 {
   opacity: 0.9;
 }
 
-.settings-section {
-  padding: 15px 20px 0;
-  text-align: right;
+footer {
+  border-top: 1px solid #e0e0e0;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
 }
 
-.settings-btn {
+.settings-icon-btn {
   background: none;
-  border: 1px solid #ddd;
-  padding: 8px 15px;
-  border-radius: 5px;
+  border: none;
+  padding: 4px;
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s;
+  color: #888;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.settings-btn:hover {
-  background: #f5f5f5;
+.settings-icon-btn:hover {
+  color: #667eea;
 }
 
 .settings-panel {
@@ -95,6 +100,7 @@ h1 {
 
 #mainContent {
   padding: 20px;
+  flex: 1;
 }
 
 .btn {

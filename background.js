@@ -6,6 +6,11 @@ chrome.runtime.onInstalled.addListener(() => {
   console.log('Market Insight extension installed');
 });
 
+// Open side panel when extension icon is clicked
+chrome.action.onClicked.addListener((tab) => {
+  chrome.sidePanel.open({ windowId: tab.windowId });
+});
+
 // Handle messages from popup or content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'analyze') {
