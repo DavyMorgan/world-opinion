@@ -24,8 +24,29 @@
       </button>
 
       <div id="loading" class="loading hidden">
-        <div class="spinner"></div>
-        <p>Analyzing content and searching markets...</p>
+        <div class="progress-milestones">
+          <div class="milestone" data-stage="chrome">
+            <div class="milestone-icon">
+              <img src="icons/chrome.png" alt="Chrome">
+            </div>
+            <span class="milestone-label">Extract</span>
+          </div>
+          <div class="milestone-connector"></div>
+          <div class="milestone" data-stage="gemini">
+            <div class="milestone-icon">
+              <img src="icons/gemini.png" alt="Gemini">
+            </div>
+            <span class="milestone-label">Analyze</span>
+          </div>
+          <div class="milestone-connector"></div>
+          <div class="milestone" data-stage="polymarket">
+            <div class="milestone-icon">
+              <img src="icons/polymarket.png" alt="Polymarket">
+            </div>
+            <span class="milestone-label">Search</span>
+          </div>
+        </div>
+        <p id="progressText">Extracting page content...</p>
       </div>
 
       <div id="results" class="results hidden">

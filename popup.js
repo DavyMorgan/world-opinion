@@ -61,10 +61,12 @@ async function analyzeCurrentTab() {
   try {
     // Show loading state
     showLoading();
+    resetProgress();
     hideError();
     hideResults();
 
-    // Get current tab
+    // Stage 1: Chrome - Extract content
+    updateProgress('chrome', 'Extracting page content...');
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
     if (!tab) {
@@ -77,10 +79,12 @@ async function analyzeCurrentTab() {
       captureScreenshot()
     ]);
 
-    // Analyze with Gemini (text + image)
+    // Stage 2: Gemini - Analyze with AI
+    updateProgress('gemini', 'Analyzing with AI...');
     const analysis = await analyzeWithGemini(pageContent, tab.title, tab.url, screenshot);
 
-    // Search Polymarket
+    // Stage 3: Polymarket - Search markets
+    updateProgress('polymarket', 'Searching prediction markets...');
     const markets = await searchPolymarket(analysis.keywords);
 
     // Display results
@@ -416,7 +420,46 @@ function showLoading() {
 }
 
 function hideLoading() {
-  document.getElementById('loading').classList.add('hidden');
+  const loading = document.getElementById('loading');
+  loading.classList.add('fade-out');
+  setTimeout(() => {
+    loading.classList.add('hidden');
+    loading.classList.remove('fade-out');
+    resetProgress();
+  }, 400);
+}
+
+function updateProgress(stage, text) {
+  const milestones = document.querySelectorAll('.milestone');
+  const connectors = document.querySelectorAll('.milestone-connector');
+  const progressText = document.getElementById('progressText');
+
+  const stages = ['chrome', 'gemini', 'polymarket'];
+  const stageIndex = stages.indexOf(stage);
+
+  milestones.forEach((milestone, index) => {
+    milestone.classList.remove('active', 'completed');
+    if (index < stageIndex) {
+      milestone.classList.add('completed');
+    } else if (index === stageIndex) {
+      milestone.classList.add('active');
+    }
+  });
+
+  connectors.forEach((connector, index) => {
+    connector.classList.toggle('active', index < stageIndex);
+  });
+
+  if (progressText) {
+    progressText.textContent = text;
+  }
+}
+
+function resetProgress() {
+  const milestones = document.querySelectorAll('.milestone');
+  const connectors = document.querySelectorAll('.milestone-connector');
+  milestones.forEach(m => m.classList.remove('active', 'completed'));
+  connectors.forEach(c => c.classList.remove('active'));
 }
 
 function showError(message) {
