@@ -15,7 +15,7 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow-y: hidden;
 }
 
 header {
@@ -101,6 +101,9 @@ footer {
 #mainContent {
   padding: 20px;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .btn {
@@ -132,6 +135,10 @@ footer {
   padding: 15px;
   font-size: 16px;
   margin-bottom: 20px;
+}
+
+#analyzeBtn {
+  flex-shrink: 0;
 }
 
 .loading {
@@ -244,6 +251,11 @@ footer {
 
 .results {
   animation: fadeIn 0.5s;
+}
+
+#results {
+  overflow-y: auto;
+  flex: 1;
 }
 
 @keyframes fadeIn {
