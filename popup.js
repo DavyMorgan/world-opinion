@@ -25,7 +25,7 @@ function toggleSettings() {
 async function saveSettings() {
   const geminiKey = document.getElementById('geminiKey').value;
   const messageDiv = document.getElementById('settingsMessage');
-  
+
   if (!geminiKey || geminiKey === '••••••••') {
     showMessage(messageDiv, 'Please enter a valid API key', 'error');
     return;
@@ -35,7 +35,7 @@ async function saveSettings() {
     await chrome.storage.local.set({ geminiApiKey: geminiKey });
     geminiApiKey = geminiKey;
     showMessage(messageDiv, 'Settings saved successfully!', 'success');
-    
+
     // Hide message after 2 seconds
     setTimeout(() => {
       messageDiv.className = 'message';
@@ -66,23 +66,23 @@ async function analyzeCurrentTab() {
 
     // Get current tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    
+
     if (!tab) {
       throw new Error('No active tab found');
     }
 
     // Extract page content
     const pageContent = await extractPageContent(tab);
-    
+
     // Analyze with Gemini
     const analysis = await analyzeWithGemini(pageContent, tab.title, tab.url);
-    
+
     // Search Polymarket
     const markets = await searchPolymarket(analysis.keywords);
-    
+
     // Display results
     displayResults(analysis, markets);
-    
+
   } catch (error) {
     console.error('Analysis error:', error);
     showError(error.message);
@@ -99,14 +99,14 @@ async function extractPageContent(tab) {
         // Extract meaningful text from the page
         const title = document.title;
         const metaDescription = document.querySelector('meta[name="description"]')?.content || '';
-        
+
         // Get main content (try to avoid navigation, headers, footers)
         const mainContent = document.querySelector('main, article, [role="main"]');
         const bodyText = mainContent ? mainContent.innerText : document.body.innerText;
-        
+
         // Limit text length to avoid overwhelming the API
         const text = bodyText.substring(0, 5000);
-        
+
         return {
           title,
           description: metaDescription,
@@ -145,7 +145,7 @@ Format your response as JSON with the following structure:
 }`;
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -170,13 +170,13 @@ Format your response as JSON with the following structure:
 
     const data = await response.json();
     const generatedText = data.candidates[0].content.parts[0].text;
-    
+
     // Try to extract JSON from the response
     const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
     }
-    
+
     // Fallback if JSON parsing fails
     return {
       summary: generatedText.substring(0, 200),
@@ -192,17 +192,17 @@ Format your response as JSON with the following structure:
 async function searchPolymarket(keywords) {
   try {
     const allMarkets = [];
-    
-    // Search for each keyword
-    for (const keyword of keywords.slice(0, 3)) { // Limit to first 3 keywords
+
+    // Search for each keyword (use more keywords since search is now effective)
+    for (const keyword of keywords.slice(0, 5)) {
       const markets = await searchPolymarketByKeyword(keyword);
       allMarkets.push(...markets);
     }
-    
-    // Remove duplicates and limit results
+
+    // Remove duplicates by condition ID and limit results
     const uniqueMarkets = Array.from(new Map(allMarkets.map(m => [m.id, m])).values());
-    return uniqueMarkets.slice(0, 5);
-    
+    return uniqueMarkets.slice(0, 8); // Return more results since they're relevant
+
   } catch (error) {
     console.error('Polymarket search error:', error);
     throw new Error(`Failed to search Polymarket: ${error.message}`);
@@ -211,60 +211,53 @@ async function searchPolymarket(keywords) {
 
 async function searchPolymarketByKeyword(keyword) {
   try {
-    // Use the Polymarket CLOB API to search markets
-    const response = await fetch(`https://clob.polymarket.com/markets?limit=5&offset=0&closed=false`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
+    const response = await fetch(
+      `https://gamma-api.polymarket.com/public-search?q=${encodeURIComponent(keyword)}&limit_per_type=10`,
+      { method: 'GET', headers: { 'Accept': 'application/json' } }
+    );
 
     if (!response.ok) {
       throw new Error(`Polymarket API error: ${response.statusText}`);
     }
 
-    const markets = await response.json();
-    
-    // Filter markets by keyword relevance
-    const filtered = markets.filter(market => {
-      const title = market.question?.toLowerCase() || '';
-      const description = market.description?.toLowerCase() || '';
-      const keywordLower = keyword.toLowerCase();
-      return title.includes(keywordLower) || description.includes(keywordLower);
-    });
-    
-    // Map to our format
-    return filtered.map(market => ({
-      id: market.condition_id || market.id,
-      title: market.question,
-      description: market.description,
-      probability: calculateProbability(market),
-      volume: market.volume || '0',
-      url: `https://polymarket.com/event/${market.slug || market.condition_id}`
-    }));
-    
+    const data = await response.json();
+    const markets = [];
+
+    // Extract markets from events in search results
+    for (const event of (data.events || [])) {
+      for (const market of (event.markets || [])) {
+        if (market.closed) continue; // Skip closed markets
+
+        markets.push({
+          id: market.conditionId || market.id,
+          title: market.question,
+          description: market.description,
+          probability: calculateProbabilityFromPrices(market.outcomePrices),
+          volume: market.volume || event.volume || '0',
+          url: `https://polymarket.com/event/${event.slug}`
+        });
+      }
+    }
+
+    return markets;
   } catch (error) {
     console.error('Error searching Polymarket:', error);
     return [];
   }
 }
 
-function calculateProbability(market) {
-  // Try to get probability from different possible fields
-  if (market.outcomes && market.outcomes.length > 0) {
-    // Calculate from outcomes prices
-    const yesOutcome = market.outcomes.find(o => o.name === 'Yes');
-    if (yesOutcome && yesOutcome.price) {
-      return Math.round(parseFloat(yesOutcome.price) * 100);
+function calculateProbabilityFromPrices(outcomePrices) {
+  try {
+    if (!outcomePrices) return 50;
+    const prices = typeof outcomePrices === 'string'
+      ? JSON.parse(outcomePrices)
+      : outcomePrices;
+    if (prices && prices.length > 0) {
+      return Math.round(parseFloat(prices[0]) * 100);
     }
+  } catch (e) {
+    console.error('Error parsing prices:', e);
   }
-  
-  // Try other probability fields
-  if (market.probability !== undefined) {
-    return Math.round(market.probability * 100);
-  }
-  
-  // Default to 50% if we can't determine
   return 50;
 }
 
@@ -272,10 +265,10 @@ function displayResults(analysis, markets) {
   const resultsDiv = document.getElementById('results');
   const analysisDiv = document.getElementById('analysisText');
   const marketsListDiv = document.getElementById('marketsList');
-  
+
   // Display analysis
   analysisDiv.textContent = analysis.summary;
-  
+
   // Display markets
   if (markets.length === 0) {
     marketsListDiv.innerHTML = '<div class="no-markets">No related prediction markets found</div>';
@@ -291,7 +284,7 @@ function displayResults(analysis, markets) {
       </div>
     `).join('');
   }
-  
+
   // Show results, hide loading
   resultsDiv.classList.remove('hidden');
   hideLoading();
