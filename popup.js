@@ -257,6 +257,10 @@ async function searchPolymarket(keywords) {
 
     // Convert to array and limit results
     const uniqueEvents = Array.from(eventMap.values());
+
+    // Sort events by volume (highest first)
+    uniqueEvents.sort((a, b) => parseFloat(b.eventVolume) - parseFloat(a.eventVolume));
+
     return uniqueEvents.slice(0, 8);
 
   } catch (error) {
