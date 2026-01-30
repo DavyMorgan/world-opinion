@@ -282,11 +282,18 @@ async function searchPolymarketByKeyword(keyword) {
       for (const market of (event.markets || [])) {
         if (market.closed) continue; // Skip closed markets
 
+        const title = market.groupItemTitle || market.question;
+        const probability = calculateProbabilityFromPrices(market.outcomePrices);
+        const volume = parseFloat(market.volume) || 0;
+
+        // Skip placeholder entries (no trading activity)
+        if (volume === 0 && probability === 50) continue;
+
         markets.push({
           id: market.conditionId || market.id,
-          title: market.groupItemTitle || market.question,
+          title: title,
           question: market.question,
-          probability: calculateProbabilityFromPrices(market.outcomePrices),
+          probability: probability,
           volume: market.volume || '0',
           closed: market.closed
         });
