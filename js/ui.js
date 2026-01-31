@@ -212,10 +212,14 @@ const UI = {
             return `
             <div class="outcome-row">
               <span class="outcome-label">${Utils.escapeHtml(market.title)}</span>
-              <div class="outcome-probability-bar">
-                <div class="probability-fill" style="width: ${market.probability}%"></div>
+              <div class="probability-circle" style="--progress: ${market.probability}">
+                <svg viewBox="0 0 36 36">
+                  <circle class="circle-bg" cx="18" cy="18" r="15.5"/>
+                  <circle class="circle-fill" cx="18" cy="18" r="15.5"
+                    stroke-dasharray="${market.probability}, 100"/>
+                </svg>
+                <span class="circle-text">${market.probability}</span>
               </div>
-              <span class="outcome-probability">${market.probability}%</span>
               ${priceChange ? `<span class="price-change ${priceChange.direction}">${priceChange.arrow}${priceChange.value}%</span>` : '<span class="price-change-placeholder"></span>'}
               ${Utils.generateSparkline(market.priceHistory, CONFIG.SPARKLINE_SMALL_WIDTH, CONFIG.SPARKLINE_SMALL_HEIGHT)}
               <span class="outcome-volume">$${Utils.formatVolume(market.volume)}</span>
@@ -237,12 +241,16 @@ const UI = {
       <div class="market-card">
         <div class="market-title">${Utils.escapeHtml(market.question || event.eventTitle)}</div>
         <div class="market-probability-row">
-          <span class="market-probability">${market.probability}%</span>
+          <div class="probability-circle large" style="--progress: ${market.probability}">
+            <svg viewBox="0 0 36 36">
+              <circle class="circle-bg" cx="18" cy="18" r="15.5"/>
+              <circle class="circle-fill" cx="18" cy="18" r="15.5"
+                stroke-dasharray="${market.probability}, 100"/>
+            </svg>
+            <span class="circle-text">${market.probability}</span>
+          </div>
           ${priceChange ? `<span class="price-change ${priceChange.direction}">${priceChange.arrow}${priceChange.value}%</span>` : ''}
           ${Utils.generateSparkline(market.priceHistory)}
-        </div>
-        <div class="probability-bar">
-          <div class="probability-fill" style="width: ${market.probability}%"></div>
         </div>
         <div class="market-info">
           <span>Volume: $${Utils.formatVolume(market.volume || event.eventVolume)}</span>

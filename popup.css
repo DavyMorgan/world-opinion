@@ -451,48 +451,51 @@ footer {
   line-height: 1.4;
 }
 
-.market-probability {
-  font-size: 24px;
-  font-weight: 700;
-  color: #667eea;
-  margin-bottom: 8px;
-}
-
-/* Probability bar styles */
-.probability-bar {
+/* Circular Progress Indicator */
+.probability-circle {
   position: relative;
-  height: 6px;
-  background: #e5e7eb;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-top: 8px;
-  margin-bottom: 8px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
 }
 
-.probability-fill {
-  position: absolute;
-  left: 0;
-  top: 0;
+.probability-circle.large {
+  width: 52px;
+  height: 52px;
+}
+
+.probability-circle svg {
+  width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, #22c55e, #16a34a);
-  border-radius: 3px;
-  transition: width 0.3s ease;
+  transform: rotate(-90deg);
 }
 
-/* Smaller probability bar for outcome rows */
-.outcome-probability-bar {
-  position: relative;
-  height: 4px;
-  background: #e5e7eb;
-  border-radius: 2px;
-  overflow: hidden;
-  flex: 1;
-  margin: 0 10px;
-  min-width: 40px;
+.probability-circle .circle-bg {
+  fill: none;
+  stroke: #e5e7eb;
+  stroke-width: 3;
 }
 
-.outcome-probability-bar .probability-fill {
-  border-radius: 2px;
+.probability-circle .circle-fill {
+  fill: none;
+  stroke: #22c55e;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.3s ease;
+}
+
+.probability-circle .circle-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.probability-circle.large .circle-text {
+  font-size: 14px;
 }
 
 .market-info {
@@ -681,6 +684,7 @@ footer {
 .outcome-row {
   display: flex;
   align-items: center;
+  gap: 8px;
   padding: 8px;
   border-radius: 4px;
 }
@@ -697,15 +701,6 @@ footer {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.outcome-probability {
-  font-weight: 700;
-  font-size: 14px;
-  color: #667eea;
-  width: 50px;
-  text-align: right;
-  flex-shrink: 0;
 }
 
 .outcome-volume {
