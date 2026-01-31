@@ -605,3 +605,42 @@ footer {
 .toggle-switch input:checked + .toggle-slider:before {
   transform: translateX(18px);
 }
+
+/* Tags container for keywords and topics */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tags-container:last-child {
+  margin-bottom: 0;
+}
+
+.tag-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+  border: 1px solid #667eea40;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #667eea;
+  font-weight: 500;
+}
+
+.tag.topic {
+  background: linear-gradient(135deg, #10b98120 0%, #059b8520 100%);
+  border-color: #10b98140;
+  color: #059669;
+}

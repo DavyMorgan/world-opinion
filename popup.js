@@ -364,14 +364,37 @@ function displayResults(analysis, events) {
   const resultsDiv = document.getElementById('results');
   const analysisSection = document.getElementById('analysis');
   const analysisDiv = document.getElementById('analysisText');
+  const keywordsSection = document.getElementById('keywords');
+  const keywordsListDiv = document.getElementById('keywordsList');
+  const topicsListDiv = document.getElementById('topicsList');
   const marketsListDiv = document.getElementById('marketsList');
 
-  // Display analysis (conditionally)
+  // Display analysis and keywords (conditionally)
   if (showAnalysis) {
     analysisDiv.textContent = analysis.summary;
     analysisSection.classList.remove('hidden');
+
+    // Display keywords
+    const keywords = analysis.keywords || [];
+    keywordsListDiv.innerHTML = keywords.length > 0
+      ? '<span class="tag-label">Keywords</span>' + keywords.map(kw => `<span class="tag">${escapeHtml(kw)}</span>`).join('')
+      : '';
+
+    // Display topics
+    const topics = analysis.topics || [];
+    topicsListDiv.innerHTML = topics.length > 0
+      ? '<span class="tag-label">Topics</span>' + topics.map(topic => `<span class="tag topic">${escapeHtml(topic)}</span>`).join('')
+      : '';
+
+    // Show keywords section if there are any keywords or topics
+    if (keywords.length > 0 || topics.length > 0) {
+      keywordsSection.classList.remove('hidden');
+    } else {
+      keywordsSection.classList.add('hidden');
+    }
   } else {
     analysisSection.classList.add('hidden');
+    keywordsSection.classList.add('hidden');
   }
 
   // Display events/markets
