@@ -184,13 +184,11 @@ ${pageContent.text}
 Please analyze both the visual content (charts, images, layout) and the text to provide:
 1. A brief summary (2-3 sentences) of what this page is about
 2. 3-5 keywords or phrases that could be used to search for related prediction markets
-3. Specific entities, events, or topics mentioned that people might bet on
 
 Format your response as JSON with the following structure:
 {
   "summary": "Brief summary here",
-  "keywords": ["keyword1", "keyword2", "keyword3"],
-  "topics": ["topic1", "topic2", "topic3"]
+  "keywords": ["keyword1", "keyword2", "keyword3"]
 }`;
 
   // Build parts array with text, and optionally image
@@ -250,8 +248,7 @@ Format your response as JSON with the following structure:
     const summaryMatch = cleanedText.match(/"summary"\s*:\s*"([^"]+)/);
     return {
       summary: summaryMatch ? summaryMatch[1] : 'Unable to analyze this page.',
-      keywords: [pageTitle],
-      topics: []
+      keywords: [pageTitle]
     };
   } catch (error) {
     console.error('Gemini API error:', error);
@@ -265,7 +262,6 @@ async function filterAndRankEvents(events, analysis) {
   const prompt = `Given this page analysis:
 Summary: ${analysis.summary}
 Keywords: ${analysis.keywords.join(', ')}
-Topics: ${analysis.topics.join(', ')}
 
 Here are prediction market events found. Return ONLY the ones that are genuinely relevant to the page content, ordered by relevance (most relevant first).
 
@@ -431,7 +427,6 @@ function displayResults(analysis, events) {
   const analysisDiv = document.getElementById('analysisText');
   const keywordsSection = document.getElementById('keywords');
   const keywordsListDiv = document.getElementById('keywordsList');
-  const topicsListDiv = document.getElementById('topicsList');
   const marketsListDiv = document.getElementById('marketsList');
 
   // Display analysis and keywords (conditionally)
@@ -442,17 +437,11 @@ function displayResults(analysis, events) {
     // Display keywords
     const keywords = analysis.keywords || [];
     keywordsListDiv.innerHTML = keywords.length > 0
-      ? '<span class="tag-label">Keywords</span>' + keywords.map(kw => `<span class="tag">${escapeHtml(kw)}</span>`).join('')
+      ? keywords.map(kw => `<span class="tag">${escapeHtml(kw)}</span>`).join('')
       : '';
 
-    // Display topics
-    const topics = analysis.topics || [];
-    topicsListDiv.innerHTML = topics.length > 0
-      ? '<span class="tag-label">Topics</span>' + topics.map(topic => `<span class="tag topic">${escapeHtml(topic)}</span>`).join('')
-      : '';
-
-    // Show keywords section if there are any keywords or topics
-    if (keywords.length > 0 || topics.length > 0) {
+    // Show keywords section if there are any keywords
+    if (keywords.length > 0) {
       keywordsSection.classList.remove('hidden');
     } else {
       keywordsSection.classList.add('hidden');
