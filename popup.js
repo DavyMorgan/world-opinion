@@ -277,7 +277,7 @@ async function searchPolymarket(keywords) {
     const uniqueEvents = Array.from(eventMap.values());
 
     // Sort events by volume (highest first)
-    uniqueEvents.sort((a, b) => parseFloat(b.eventVolume) - parseFloat(a.eventVolume));
+    // uniqueEvents.sort((a, b) => parseFloat(b.eventVolume) - parseFloat(a.eventVolume));
 
     return uniqueEvents.slice(0, 8);
 
