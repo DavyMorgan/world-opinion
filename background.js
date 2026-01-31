@@ -1,9 +1,9 @@
 // Background service worker for the extension
-console.log('Market Insight background service worker loaded');
+console.log('World Opinion background service worker loaded');
 
 // Listen for extension installation
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('Market Insight extension installed');
+  console.log('World Opinion extension installed');
 });
 
 // Open side panel when extension icon is clicked

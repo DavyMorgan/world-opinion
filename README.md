@@ -1,4 +1,4 @@
-# Market Insight
+# World Opinion
 
 A Chrome extension that analyzes the current tab, finds related prediction markets on Polymarket, and displays the current probability. The analysis is performed using the Gemini API, and prediction market data is accessed through the Polymarket API.
 
@@ -32,7 +32,7 @@ A Chrome extension that analyzes the current tab, finds related prediction marke
    - Select the `market-insight` directory
 
 3. **Configure your API key**
-   - Click the Market Insight extension icon in your Chrome toolbar
+   - Click the World Opinion extension icon in your Chrome toolbar
    - Click the ⚙️ Settings button
    - Enter your Gemini API key
    - Click "Save Settings"
@@ -40,7 +40,7 @@ A Chrome extension that analyzes the current tab, finds related prediction marke
 ## Usage
 
 1. Navigate to any web page you want to analyze (news article, blog post, etc.)
-2. Click the Market Insight extension icon
+2. Click the World Opinion extension icon
 3. Click "🔍 Analyze Current Tab"
 4. Wait for the analysis to complete
 5. View related prediction markets and their current probabilities

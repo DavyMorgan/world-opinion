@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Market Insight is a Chrome Extension (Manifest V3) that analyzes web page content using Google's Gemini AI and finds related prediction markets on Polymarket. It displays real-time probabilities for matching markets.
+World Opinion is a Chrome Extension (Manifest V3) that analyzes web page content using Google's Gemini AI and finds related prediction markets on Polymarket. It displays real-time probabilities for matching markets.
 
 ## Development Commands
 
