@@ -10,6 +10,12 @@ A Chrome extension that analyzes the current tab, finds related prediction marke
 - ⚙️ **Easy Configuration**: Simple setup with your Gemini API key
 - 🎨 **Modern UI**: Clean, intuitive interface with gradient design
 
+## Screenshots
+
+![Analysis in progress](screenshots/screenshot1.png)
+
+![Analysis results with prediction markets](screenshots/screenshot2.png)
+
 ## Installation
 
 ### Prerequisites
