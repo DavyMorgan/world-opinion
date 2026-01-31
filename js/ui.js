@@ -431,5 +431,20 @@ const UI = {
     if (notice) {
       notice.classList.add('hidden');
     }
+  },
+
+  /**
+   * Reset UI to initial state (no results displayed)
+   * Used when navigating to a page with no cached results
+   */
+  resetToInitialState() {
+    this.hideResults();
+    this.hideError();
+    this.hideRefreshButton();
+    this.hideFallbackNotice();
+    this.hideLoading();
+    if (this.elements.screenshotPreview) {
+      this.elements.screenshotPreview.classList.add('hidden');
+    }
   }
 };

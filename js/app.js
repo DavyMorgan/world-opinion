@@ -25,6 +25,9 @@ async function init() {
   // Setup event listeners
   setupEventListeners();
 
+  // Setup tab change detection for auto-displaying cached results
+  setupTabChangeDetection();
+
   // Set initial API key visibility based on saved model
   UI.updateApiKeyVisibility();
 }
@@ -47,6 +50,46 @@ function setupEventListeners() {
     await CacheService.clearAll();
     UI.updateApiKeyVisibility();
   });
+}
+
+/**
+ * Setup listeners to detect tab URL changes and auto-display cached results
+ */
+function setupTabChangeDetection() {
+  let currentUrl = null;
+
+  async function handleUrlChange() {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab || tab.url === currentUrl) return;
+
+    currentUrl = tab.url;
+
+    // Check if we have cached results for this URL
+    const cached = await CacheService.get(tab.url);
+    if (cached) {
+      // Display cached results
+      UI.hideError();
+      UI.hideFallbackNotice();
+      UI.displayResults(cached.analysis, cached.markets);
+      UI.showRefreshButton();
+    } else {
+      // No cache - reset to initial state
+      UI.resetToInitialState();
+    }
+  }
+
+  // Listen for tab activation (switching tabs)
+  chrome.tabs.onActivated.addListener(handleUrlChange);
+
+  // Listen for tab updates (URL changes within same tab)
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.url) {
+      handleUrlChange();
+    }
+  });
+
+  // Initialize with current tab
+  handleUrlChange();
 }
 
 /**
