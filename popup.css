@@ -133,6 +133,27 @@ footer {
   font-weight: 500;
 }
 
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.label-row label {
+  margin-bottom: 0;
+}
+
+.api-key-help {
+  font-size: 11px;
+  color: #667eea;
+  text-decoration: none;
+}
+
+.api-key-help:hover {
+  text-decoration: underline;
+}
+
 .input-with-action {
   display: flex;
   gap: 8px;

@@ -103,7 +103,10 @@
         </select>
       </div>
       <div class="input-group" id="apiKeyGroup">
-        <label for="geminiKey">Gemini API Key:</label>
+        <div class="label-row">
+          <label for="geminiKey">Gemini API Key:</label>
+          <a href="https://aistudio.google.com/api-keys" target="_blank" class="api-key-help">Don't have an API Key? Create one!</a>
+        </div>
         <div class="input-with-action">
           <input type="password" id="geminiKey" placeholder="Enter your Gemini API key">
           <button id="saveSettings" class="save-icon-btn" title="Save">
