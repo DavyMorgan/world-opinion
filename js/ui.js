@@ -310,11 +310,16 @@ const UI = {
     iconCheck.classList.remove('hidden');
     saveBtn.classList.add('saved');
 
-    // Revert to save icon after 2 seconds
+    // Revert to save icon after 2 seconds, then reset to disabled state
     setTimeout(() => {
       iconSave.classList.remove('hidden');
       iconCheck.classList.add('hidden');
       saveBtn.classList.remove('saved');
+
+      // Reset input to show placeholder and disable button
+      this.elements.geminiKey.value = '';
+      this.elements.geminiKey.placeholder = 'API Key saved. Type to use a new key.';
+      this.elements.saveBtn.disabled = true;
     }, 2000);
   },
 
@@ -331,11 +336,27 @@ const UI = {
    * Apply saved settings to UI
    */
   applySavedSettings() {
-    if (AppState.geminiApiKey) {
-      this.elements.geminiKey.value = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
+    this.elements.geminiKey.value = '';
+    this.elements.saveBtn.disabled = true;
+
+    // If API key exists AND no fallback was triggered, show "saved" placeholder
+    // Otherwise, prompt user to enter/re-enter their key
+    if (AppState.geminiApiKey && !AppState.fallbackUsed.analysis) {
+      this.elements.geminiKey.placeholder = 'API Key saved. Type to use a new key.';
+    } else {
+      this.elements.geminiKey.placeholder = 'Enter your Gemini API key';
     }
+
     this.elements.geminiModel.value = AppState.geminiModel;
     this.elements.showAnalysis.checked = AppState.showAnalysis;
+  },
+
+  /**
+   * Update save button state based on input content
+   */
+  updateSaveButtonState() {
+    const hasInput = this.elements.geminiKey.value.trim().length > 0;
+    this.elements.saveBtn.disabled = !hasInput;
   },
 
   // ============ Refresh Button ============
@@ -411,6 +432,11 @@ const UI = {
   showFallbackNotice() {
     const notice = document.getElementById('fallbackNotice');
     if (!notice) return;
+
+    // Update API key placeholder to prompt user to fix their key
+    if (this.elements.geminiKey) {
+      this.elements.geminiKey.placeholder = 'Enter your Gemini API key';
+    }
 
     notice.innerHTML = `
       <div class="fallback-notice-content">

@@ -50,6 +50,10 @@ function setupEventListeners() {
     await CacheService.clearAll();
     UI.updateApiKeyVisibility();
   });
+
+  document.getElementById('geminiKey').addEventListener('input', () => {
+    UI.updateSaveButtonState();
+  });
 }
 
 /**
@@ -108,9 +112,9 @@ async function refreshAnalysis() {
  * Save settings from UI
  */
 async function saveSettings() {
-  const geminiKey = UI.elements.geminiKey.value;
+  const geminiKey = UI.elements.geminiKey.value.trim();
 
-  if (!geminiKey || geminiKey === '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022') {
+  if (!geminiKey) {
     UI.shakeSaveButton();
     return;
   }

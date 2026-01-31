@@ -97,6 +97,7 @@ footer {
 
 .input-group.model-group {
   margin-top: 12px;
+  margin-bottom: 16px;
 }
 
 .model-select {
@@ -180,6 +181,12 @@ footer {
 
 .save-icon-btn.saved {
   background: #22c55e;
+}
+
+.save-icon-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 @keyframes shake {
