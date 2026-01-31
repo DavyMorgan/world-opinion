@@ -37,7 +37,20 @@ async function init() {
   document.getElementById('geminiModel').addEventListener('change', async (e) => {
     geminiModel = e.target.value;
     await chrome.storage.local.set({ geminiModel });
+    updateApiKeyVisibility();
   });
+
+  // Set initial API key visibility based on saved model
+  updateApiKeyVisibility();
+}
+
+function updateApiKeyVisibility() {
+  const apiKeyGroup = document.getElementById('apiKeyGroup');
+  if (geminiModel === 'gemini-nano') {
+    apiKeyGroup.classList.add('hidden');
+  } else {
+    apiKeyGroup.classList.remove('hidden');
+  }
 }
 
 // Check if Gemini Nano (Chrome's built-in LanguageModel) is available
