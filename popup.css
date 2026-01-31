@@ -679,6 +679,7 @@ footer {
   border-radius: 6px;
   padding: 8px;
   margin-bottom: 8px;
+  container-type: inline-size;
 }
 
 .outcome-row {
@@ -904,4 +905,13 @@ footer {
 
 .fallback-notice-dismiss:hover {
   opacity: 1;
+}
+
+/* Responsive: hide price change and sparkline on narrow container widths */
+@container (max-width: 280px) {
+  .outcome-row .price-change,
+  .outcome-row .price-change-placeholder,
+  .outcome-row .sparkline {
+    display: none;
+  }
 }
