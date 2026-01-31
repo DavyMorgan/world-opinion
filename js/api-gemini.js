@@ -58,6 +58,7 @@ Return an empty array [] if none are relevant.`;
 
   /**
    * Analyze page content using appropriate Gemini model
+   * Falls back to local keyword extraction if API fails
    * @param {Object} pageContent - Extracted page content
    * @param {string} pageTitle - Page title
    * @param {string} pageUrl - Page URL
@@ -65,10 +66,18 @@ Return an empty array [] if none are relevant.`;
    * @returns {Promise<Object>} Analysis result with summary and keywords
    */
   async analyze(pageContent, pageTitle, pageUrl, screenshot) {
-    if (AppState.isUsingNano()) {
-      return await this._analyzeWithNano(pageContent, pageTitle, pageUrl, screenshot);
+    try {
+      if (AppState.isUsingNano()) {
+        return await this._analyzeWithNano(pageContent, pageTitle, pageUrl, screenshot);
+      }
+      return await this._analyzeWithApi(pageContent, pageTitle, pageUrl, screenshot);
+    } catch (error) {
+      console.warn('Gemini analysis failed, falling back to local extraction:', error.message);
+      // Track that fallback was used
+      AppState.fallbackUsed.analysis = true;
+      // Fall back to local keyword extraction
+      return Utils.extractKeywordsLocal(pageContent, pageTitle);
     }
-    return await this._analyzeWithApi(pageContent, pageTitle, pageUrl, screenshot);
   },
 
   /**
@@ -254,6 +263,7 @@ Return an empty array [] if none are relevant.`;
 
       if (!response.ok) {
         console.error('Filter API error, returning unfiltered results');
+        AppState.fallbackUsed.filter = true;
         return events.slice(0, CONFIG.MAX_MARKETS_TO_DISPLAY);
       }
 
@@ -263,6 +273,7 @@ Return an empty array [] if none are relevant.`;
       return this._applyFilterIndices(events, text);
     } catch (error) {
       console.error('Filter error, returning unfiltered results:', error);
+      AppState.fallbackUsed.filter = true;
       return events.slice(0, CONFIG.MAX_MARKETS_TO_DISPLAY);
     }
   },
@@ -286,6 +297,7 @@ Return an empty array [] if none are relevant.`;
       return this._applyFilterIndices(events, result);
     } catch (error) {
       console.error('Nano filter error, returning unfiltered results:', error);
+      AppState.fallbackUsed.filter = true;
       return events.slice(0, CONFIG.MAX_MARKETS_TO_DISPLAY);
     }
   },

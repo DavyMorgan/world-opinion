@@ -35,7 +35,8 @@ async function init() {
 function setupEventListeners() {
   document.getElementById('settingsBtn').addEventListener('click', () => UI.toggleSettings());
   document.getElementById('saveSettings').addEventListener('click', saveSettings);
-  document.getElementById('analyzeBtn').addEventListener('click', analyzeCurrentTab);
+  document.getElementById('analyzeBtn').addEventListener('click', () => analyzeCurrentTab());
+  document.getElementById('refreshBtn').addEventListener('click', refreshAnalysis);
 
   document.getElementById('showAnalysis').addEventListener('change', async (e) => {
     await AppState.save('showAnalysis', e.target.checked);
@@ -43,8 +44,21 @@ function setupEventListeners() {
 
   document.getElementById('geminiModel').addEventListener('change', async (e) => {
     await AppState.save('geminiModel', e.target.value);
+    await CacheService.clearAll();
     UI.updateApiKeyVisibility();
   });
+}
+
+/**
+ * Force refresh analysis (bypass cache)
+ */
+async function refreshAnalysis() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tab) {
+    await CacheService.clear(tab.url);
+  }
+  UI.hideRefreshButton();
+  analyzeCurrentTab();
 }
 
 /**
@@ -121,8 +135,9 @@ async function extractPageContent(tab) {
 
 /**
  * Main analysis pipeline - orchestrates the entire flow
+ * @param {boolean} forceRefresh - Skip cache if true
  */
-async function analyzeCurrentTab() {
+async function analyzeCurrentTab(forceRefresh = false) {
   // Check if API key is configured (not required for Nano)
   if (!AppState.hasRequiredApiKey()) {
     UI.showError('Please configure your Gemini API key in settings first.');
@@ -130,19 +145,39 @@ async function analyzeCurrentTab() {
   }
 
   try {
-    // Show loading state
-    UI.showLoading();
-    UI.resetProgress();
+    // Hide any previous state
     UI.hideError();
     UI.hideResults();
+    UI.hideRefreshButton();
+    UI.hideFallbackNotice();
 
-    // Stage 1: Chrome - Extract content
-    UI.updateProgress('chrome', 'Extracting page content...');
+    // Reset fallback tracking flags
+    AppState.resetFallbackFlags();
+
+    // Get current tab first to check cache
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
     if (!tab) {
       throw new Error('No active tab found');
     }
+
+    // Check cache first (unless forcing refresh)
+    if (!forceRefresh) {
+      const cached = await CacheService.get(tab.url);
+      if (cached) {
+        // Display cached results immediately
+        UI.displayResults(cached.analysis, cached.markets);
+        UI.showRefreshButton();
+        return;
+      }
+    }
+
+    // Show loading state
+    UI.showLoading();
+    UI.resetProgress();
+
+    // Stage 1: Chrome - Extract content
+    UI.updateProgress('chrome', 'Extracting page content...');
 
     // Extract page content and capture screenshot in parallel
     const [pageContent, screenshot] = await Promise.all([
@@ -166,8 +201,20 @@ async function analyzeCurrentTab() {
     // Fetch price history for all markets in parallel
     const marketsWithHistory = await PolymarketService.enrichWithPriceHistory(filteredMarkets);
 
+    // Cache the results
+    await CacheService.set(tab.url, {
+      analysis: analysis,
+      markets: marketsWithHistory
+    });
+
     // Display results
     UI.displayResults(analysis, marketsWithHistory);
+    UI.showRefreshButton();
+
+    // Show fallback notice if rule-based analysis was used
+    if (AppState.fallbackUsed.analysis || AppState.fallbackUsed.filter) {
+      UI.showFallbackNotice();
+    }
 
   } catch (error) {
     console.error('Analysis error:', error);

@@ -7,6 +7,19 @@ const AppState = {
   geminiModel: 'gemini-3-flash-preview',
   showAnalysis: false,
 
+  // Track when fallback to rule-based analysis is used
+  fallbackUsed: {
+    analysis: false,
+    filter: false
+  },
+
+  /**
+   * Reset fallback flags (call at start of analysis)
+   */
+  resetFallbackFlags() {
+    this.fallbackUsed = { analysis: false, filter: false };
+  },
+
   /**
    * Load state from Chrome storage
    */

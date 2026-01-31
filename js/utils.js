@@ -15,6 +15,30 @@ const Utils = {
   },
 
   /**
+   * Normalize URL by removing tracking parameters
+   * @param {string} url - URL to normalize
+   * @returns {string} Normalized URL
+   */
+  normalizeUrl(url) {
+    try {
+      const urlObj = new URL(url);
+
+      // Remove tracking parameters
+      CONFIG.TRACKING_PARAMS.forEach(param => {
+        urlObj.searchParams.delete(param);
+      });
+
+      // Remove hash fragment
+      urlObj.hash = '';
+
+      return urlObj.toString();
+    } catch (e) {
+      // Return original if URL parsing fails
+      return url;
+    }
+  },
+
+  /**
    * Format volume numbers to human-readable format (K, M)
    * @param {string|number} volume - Volume to format
    * @returns {string} Formatted volume string
@@ -170,8 +194,107 @@ const Utils = {
         <polyline fill="none" stroke="${trend}" stroke-width="1.5" points="${points}"/>
       </svg>
     `;
+  },
+
+  // ============ Local Keyword Extraction ============
+
+  /**
+   * Common English stopwords to filter out
+   */
+  STOPWORDS: new Set([
+    'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'has', 'he',
+    'in', 'is', 'it', 'its', 'of', 'on', 'or', 'that', 'the', 'to', 'was', 'were',
+    'will', 'with', 'this', 'but', 'they', 'have', 'had', 'what', 'when', 'where',
+    'who', 'which', 'why', 'how', 'all', 'each', 'every', 'both', 'few', 'more',
+    'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same',
+    'so', 'than', 'too', 'very', 'can', 'just', 'should', 'now', 'also', 'into',
+    'over', 'after', 'before', 'between', 'under', 'again', 'further', 'then',
+    'once', 'here', 'there', 'any', 'about', 'up', 'out', 'if', 'because', 'been',
+    'being', 'does', 'did', 'doing', 'would', 'could', 'might', 'must', 'shall',
+    'may', 'says', 'said', 'like', 'get', 'got', 'go', 'going', 'make', 'made',
+    'take', 'new', 'one', 'two', 'first', 'last', 'long', 'great', 'little', 'own',
+    'still', 'back', 'even', 'much', 'well', 'many', 'way', 'use', 'used', 'using',
+    'through', 'while', 'during', 'without', 'however', 'another', 'since', 'until',
+    'around', 'ever', 'never', 'always', 'often', 'yet', 'though', 'rather', 'quite',
+    'almost', 'already', 'perhaps', 'need', 'come', 'came', 'year', 'years', 'time',
+    'day', 'days', 'week', 'weeks', 'month', 'months', 'people', 'world', 'life',
+    'part', 'point', 'place', 'case', 'thing', 'things', 'lot', 'work', 'number',
+    'something', 'anything', 'nothing', 'everything', 'someone', 'anyone', 'everyone'
+  ]),
+
+  /**
+   * High-signal terms that should be boosted for prediction market relevance
+   */
+  TOPIC_BOOST_TERMS: new Set([
+    // Politics
+    'trump', 'biden', 'harris', 'election', 'president', 'congress', 'senate',
+    'democrat', 'republican', 'vote', 'poll', 'ballot', 'campaign', 'primary',
+    'nominee', 'governor', 'mayor', 'legislation', 'impeach', 'resign',
+    // Economics/Finance
+    'bitcoin', 'crypto', 'ethereum', 'fed', 'interest', 'rate', 'inflation',
+    'recession', 'gdp', 'stock', 'market', 'nasdaq', 'dow', 'price', 'trade',
+    'tariff', 'economy', 'unemployment', 'jobs', 'dollar', 'euro', 'yen',
+    // Technology
+    'ai', 'openai', 'google', 'apple', 'microsoft', 'meta', 'tesla', 'spacex',
+    'nvidia', 'chip', 'semiconductor', 'launch', 'release', 'iphone', 'android',
+    // Sports
+    'nba', 'nfl', 'mlb', 'nhl', 'soccer', 'football', 'basketball', 'baseball',
+    'championship', 'finals', 'playoff', 'superbowl', 'worldcup', 'olympics',
+    'win', 'champion', 'mvp', 'draft', 'trade',
+    // Geopolitics
+    'war', 'ukraine', 'russia', 'china', 'israel', 'gaza', 'nato', 'military',
+    'sanctions', 'ceasefire', 'peace', 'nuclear', 'missile', 'invasion',
+    // Entertainment
+    'oscar', 'emmy', 'grammy', 'movie', 'film', 'box', 'office', 'album',
+    // Science/Health
+    'fda', 'vaccine', 'covid', 'pandemic', 'climate', 'hurricane', 'earthquake',
+    'nasa', 'space', 'moon', 'mars', 'discovery'
+  ]),
+
+  /**
+   * Extract keywords locally when Gemini API fails
+   * @param {Object} pageContent - Extracted page content
+   * @param {string} pageTitle - Page title
+   * @returns {Object} Analysis result with summary and keywords
+   */
+  extractKeywordsLocal(pageContent, pageTitle) {
+    const text = `${pageTitle} ${pageContent.description} ${pageContent.text}`.toLowerCase();
+
+    // Tokenize: split on non-word characters, keep only words 3+ chars
+    const words = text.match(/\b[a-z]{3,}\b/g) || [];
+
+    // Count word frequencies
+    const wordCounts = {};
+    words.forEach(word => {
+      if (!this.STOPWORDS.has(word)) {
+        wordCounts[word] = (wordCounts[word] || 0) + 1;
+      }
+    });
+
+    // Score words: frequency + boost for topic terms
+    const scored = Object.entries(wordCounts).map(([word, count]) => {
+      let score = count;
+      if (this.TOPIC_BOOST_TERMS.has(word)) {
+        score *= 3; // Triple score for high-signal terms
+      }
+      return { word, score };
+    });
+
+    // Sort by score and take top 5
+    scored.sort((a, b) => b.score - a.score);
+    const keywords = scored.slice(0, 5).map(item => item.word);
+
+    // Build a simple summary from title
+    const summary = `Page about: ${pageTitle || 'Unknown topic'}`;
+
+    return {
+      summary,
+      keywords: keywords.length > 0 ? keywords : [pageTitle.split(' ')[0] || 'general']
+    };
   }
 };
 
 // Freeze to prevent modification
 Object.freeze(Utils);
+Object.freeze(Utils.STOPWORDS);
+Object.freeze(Utils.TOPIC_BOOST_TERMS);

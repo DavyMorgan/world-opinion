@@ -11,6 +11,17 @@ const CONFIG = {
   MAX_KEYWORDS_TO_SEARCH: 5,
   MAX_MARKETS_TO_DISPLAY: 8,
 
+  // Cache settings
+  CACHE_TTL_MS: 300000, // 5 minutes
+
+  // URL tracking parameters to strip for cache normalization
+  TRACKING_PARAMS: [
+    'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+    'fbclid', 'gclid', 'gclsrc', 'dclid', 'msclkid',
+    'ref', 'source', 'referrer', 'ref_src', 'ref_url',
+    '_ga', '_gl', 'mc_cid', 'mc_eid'
+  ],
+
   // Gemini API settings
   GEMINI_TEMPERATURE: 0.7,
   GEMINI_MAX_TOKENS: 2048,

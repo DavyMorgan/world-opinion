@@ -221,14 +221,50 @@ footer {
 }
 
 .btn-large {
-  width: 100%;
+  flex: 1;
   padding: 15px;
   font-size: 16px;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
   margin-bottom: 20px;
 }
 
 #analyzeBtn {
   flex-shrink: 0;
+}
+
+.refresh-icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #888;
+  transition: color 0.2s, background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.refresh-icon-btn:hover {
+  color: #667eea;
+  background-color: rgba(102, 126, 234, 0.1);
+}
+
+.refresh-icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.refresh-icon-btn.spinning svg {
+  animation: spin 1s linear infinite;
 }
 
 .loading {
@@ -422,6 +458,43 @@ footer {
   margin-bottom: 8px;
 }
 
+/* Probability bar styles */
+.probability-bar {
+  position: relative;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.probability-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* Smaller probability bar for outcome rows */
+.outcome-probability-bar {
+  position: relative;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+  flex: 1;
+  margin: 0 10px;
+  min-width: 40px;
+}
+
+.outcome-probability-bar .probability-fill {
+  border-radius: 2px;
+}
+
 .market-info {
   display: flex;
   justify-content: space-between;
@@ -446,11 +519,49 @@ footer {
 .error {
   background: #fee;
   color: #c33;
-  padding: 15px;
+  padding: 20px;
   border-radius: 8px;
   border: 1px solid #fcc;
   font-size: 14px;
   line-height: 1.5;
+  text-align: center;
+}
+
+.error-icon {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 12px;
+}
+
+.error-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: #c33;
+}
+
+.error-message {
+  margin-bottom: 15px;
+}
+
+.btn-retry {
+  background: #c33;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-retry:hover {
+  background: #a22;
+  transform: translateY(-1px);
+}
+
+.btn-retry:active {
+  transform: translateY(0);
 }
 
 .message {
@@ -478,9 +589,34 @@ footer {
 
 .no-markets {
   text-align: center;
-  padding: 20px;
+  padding: 30px 20px;
   color: #888;
-  font-style: italic;
+}
+
+.no-markets-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  opacity: 0.5;
+}
+
+.no-markets-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: #888;
+}
+
+.no-markets-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.no-markets-text {
+  font-size: 13px;
+  color: #888;
+  line-height: 1.4;
 }
 
 /* Event card styles for grouped markets */
@@ -714,4 +850,63 @@ footer {
   background: linear-gradient(135deg, #10b98120 0%, #059b8520 100%);
   border-color: #10b98140;
   color: #059669;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.cache-indicator {
+  font-size: 11px;
+  color: #888;
+  margin-left: 8px;
+}
+
+/* Fallback Notice */
+.fallback-notice {
+  margin-bottom: 15px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.fallback-notice-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+}
+
+.fallback-notice-icon {
+  width: 18px;
+  height: 18px;
+  stroke: #d97706;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.fallback-notice-text {
+  flex: 1;
+  font-size: 13px;
+  color: #92400e;
+  line-height: 1.4;
+}
+
+.fallback-notice-dismiss {
+  background: none;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  color: #d97706;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.fallback-notice-dismiss:hover {
+  opacity: 1;
 }

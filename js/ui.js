@@ -28,7 +28,8 @@ const UI = {
       showAnalysis: document.getElementById('showAnalysis'),
       apiKeyGroup: document.getElementById('apiKeyGroup'),
       nanoOption: document.getElementById('nanoOption'),
-      saveBtn: document.getElementById('saveSettings')
+      saveBtn: document.getElementById('saveSettings'),
+      refreshBtn: document.getElementById('refreshBtn')
     };
   },
 
@@ -163,7 +164,18 @@ const UI = {
    */
   renderMarkets(events) {
     if (events.length === 0) {
-      this.elements.marketsList.innerHTML = '<div class="no-markets">No related prediction markets found</div>';
+      this.elements.marketsList.innerHTML = `
+        <div class="no-markets">
+          <div class="no-markets-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </div>
+          <div class="no-markets-title">No matching markets found</div>
+          <div class="no-markets-text">Try analyzing a page with topics that have active prediction markets on Polymarket</div>
+        </div>
+      `;
       return;
     }
 
@@ -200,6 +212,9 @@ const UI = {
             return `
             <div class="outcome-row">
               <span class="outcome-label">${Utils.escapeHtml(market.title)}</span>
+              <div class="outcome-probability-bar">
+                <div class="probability-fill" style="width: ${market.probability}%"></div>
+              </div>
               <span class="outcome-probability">${market.probability}%</span>
               ${priceChange ? `<span class="price-change ${priceChange.direction}">${priceChange.arrow}${priceChange.value}%</span>` : '<span class="price-change-placeholder"></span>'}
               ${Utils.generateSparkline(market.priceHistory, CONFIG.SPARKLINE_SMALL_WIDTH, CONFIG.SPARKLINE_SMALL_HEIGHT)}
@@ -225,6 +240,9 @@ const UI = {
           <span class="market-probability">${market.probability}%</span>
           ${priceChange ? `<span class="price-change ${priceChange.direction}">${priceChange.arrow}${priceChange.value}%</span>` : ''}
           ${Utils.generateSparkline(market.priceHistory)}
+        </div>
+        <div class="probability-bar">
+          <div class="probability-fill" style="width: ${market.probability}%"></div>
         </div>
         <div class="market-info">
           <span>Volume: $${Utils.formatVolume(market.volume || event.eventVolume)}</span>
@@ -312,15 +330,62 @@ const UI = {
     this.elements.showAnalysis.checked = AppState.showAnalysis;
   },
 
+  // ============ Refresh Button ============
+
+  /**
+   * Show refresh button (for cached results)
+   */
+  showRefreshButton() {
+    this.elements.refreshBtn.classList.remove('hidden');
+  },
+
+  /**
+   * Hide refresh button
+   */
+  hideRefreshButton() {
+    this.elements.refreshBtn.classList.add('hidden');
+  },
+
+  /**
+   * Set refresh button spinning state
+   * @param {boolean} spinning - Whether to show spinning animation
+   */
+  setRefreshSpinning(spinning) {
+    if (spinning) {
+      this.elements.refreshBtn.classList.add('spinning');
+    } else {
+      this.elements.refreshBtn.classList.remove('spinning');
+    }
+  },
+
   // ============ Error Handling ============
 
   /**
-   * Show error message
+   * Show error message with retry button
    * @param {string} message - Error message to display
    */
   showError(message) {
-    this.elements.error.textContent = message;
+    this.elements.error.innerHTML = `
+      <div class="error-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <div class="error-message">${Utils.escapeHtml(message)}</div>
+      <button class="btn-retry" id="retryBtn">Try Again</button>
+    `;
     this.elements.error.classList.remove('hidden');
+
+    // Bind retry button
+    document.getElementById('retryBtn').addEventListener('click', () => {
+      this.hideError();
+      // Trigger analysis through the global function
+      if (typeof analyzeCurrentTab === 'function') {
+        analyzeCurrentTab();
+      }
+    });
   },
 
   /**
@@ -328,5 +393,43 @@ const UI = {
    */
   hideError() {
     this.elements.error.classList.add('hidden');
+  },
+
+  // ============ Fallback Notice ============
+
+  /**
+   * Show fallback notice when rule-based analysis is used
+   */
+  showFallbackNotice() {
+    const notice = document.getElementById('fallbackNotice');
+    if (!notice) return;
+
+    notice.innerHTML = `
+      <div class="fallback-notice-content">
+        <svg class="fallback-notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span class="fallback-notice-text">Using basic analysis mode. For better results, check your Gemini API key in settings.</span>
+        <button class="fallback-notice-dismiss" title="Dismiss">&times;</button>
+      </div>
+    `;
+    notice.classList.remove('hidden');
+
+    // Bind dismiss button
+    notice.querySelector('.fallback-notice-dismiss').addEventListener('click', () => {
+      this.hideFallbackNotice();
+    });
+  },
+
+  /**
+   * Hide fallback notice
+   */
+  hideFallbackNotice() {
+    const notice = document.getElementById('fallbackNotice');
+    if (notice) {
+      notice.classList.add('hidden');
+    }
   }
 };
