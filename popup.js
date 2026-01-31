@@ -127,16 +127,11 @@ async function analyzeCurrentTab() {
       throw new Error('No active tab found');
     }
 
-    // Extract page content and capture screenshot (skip screenshot for Nano - text only)
-    let pageContent, screenshot = null;
-    if (usingNano) {
-      pageContent = await extractPageContent(tab);
-    } else {
-      [pageContent, screenshot] = await Promise.all([
-        extractPageContent(tab),
-        captureScreenshot()
-      ]);
-    }
+    // Extract page content and capture screenshot for both modes
+    const [pageContent, screenshot] = await Promise.all([
+      extractPageContent(tab),
+      captureScreenshot()
+    ]);
 
     // Stage 2: Gemini - Analyze with AI
     updateProgress('gemini', usingNano ? 'Analyzing with on-device AI...' : 'Analyzing with AI...');
@@ -213,7 +208,7 @@ async function extractPageContent(tab) {
 async function analyzeWithGemini(pageContent, pageTitle, pageUrl, screenshot) {
   // Route to Nano if selected
   if (geminiModel === 'gemini-nano') {
-    return await analyzeWithNano(pageContent, pageTitle, pageUrl);
+    return await analyzeWithNano(pageContent, pageTitle, pageUrl, screenshot);
   }
 
   const prompt = `Analyze this web page (both the screenshot and extracted text) and extract key topics, entities, and events that could be related to prediction markets on Polymarket.
@@ -300,18 +295,30 @@ Format your response as JSON with the following structure:
   }
 }
 
-// Analyze using Chrome's built-in Gemini Nano (text only, no screenshot)
-async function analyzeWithNano(pageContent, pageTitle, pageUrl) {
+// Analyze using Chrome's built-in Gemini Nano with optional multimodal support
+async function analyzeWithNano(pageContent, pageTitle, pageUrl, screenshot) {
   try {
-    const session = await LanguageModel.create({
-      temperature: 0.7,
-      topK: 3
-    });
+    // Check if multimodal is available when screenshot provided
+    let useMultimodal = false;
+    if (screenshot) {
+      try {
+        const multimodalAvailability = await LanguageModel.availability({
+          expectedInputs: [{ type: "image" }]
+        });
+        useMultimodal = multimodalAvailability !== 'unavailable';
+        if (!useMultimodal) {
+          console.log('Gemini Nano multimodal not available, using text-only mode');
+        }
+      } catch (e) {
+        console.log('Multimodal availability check failed:', e.message);
+      }
+    }
 
     // Truncate content more aggressively for smaller context window
     const truncatedText = pageContent.text.substring(0, 3000);
 
-    const prompt = `Analyze this web page and extract key topics, entities, and events that could be related to prediction markets on Polymarket.
+    // Helper to build prompt text
+    const buildPrompt = (isMultimodal) => `Analyze this web page ${isMultimodal ? '(both the screenshot and extracted text) ' : ''}and extract key topics, entities, and events that could be related to prediction markets on Polymarket.
 
 Page Title: ${pageTitle}
 Page URL: ${pageUrl}
@@ -320,7 +327,7 @@ Page Description: ${pageContent.description}
 Extracted Text:
 ${truncatedText}
 
-Please provide:
+Please ${isMultimodal ? 'analyze both the visual content (charts, images, layout) and the text to ' : ''}provide:
 1. A brief summary (2-3 sentences) of what this page is about
 2. 3-5 keywords or phrases that could be used to search for related prediction markets
 
@@ -330,8 +337,46 @@ Format your response as JSON with the following structure:
   "keywords": ["keyword1", "keyword2", "keyword3"]
 }`;
 
-    const result = await session.prompt(prompt);
-    session.destroy();
+    // Helper to run text-only session
+    const runTextOnly = async () => {
+      const session = await LanguageModel.create({
+        temperature: 0.7,
+        topK: 3
+      });
+      const result = await session.prompt(buildPrompt(false));
+      session.destroy();
+      return result;
+    };
+
+    let result;
+    if (useMultimodal) {
+      try {
+        // Try multimodal session
+        const session = await LanguageModel.create({
+          temperature: 0.7,
+          topK: 3,
+          expectedInputs: [
+            { type: "text" },
+            { type: "image" }
+          ]
+        });
+        const imageBlob = base64ToBlob(screenshot);
+        result = await session.prompt([{
+          role: "user",
+          content: [
+            { type: "text", value: buildPrompt(true) },
+            { type: "image", value: imageBlob }
+          ]
+        }]);
+        session.destroy();
+      } catch (multimodalError) {
+        // Multimodal failed at runtime - fall back to text-only
+        console.warn('Multimodal session failed, falling back to text-only:', multimodalError.message);
+        result = await runTextOnly();
+      }
+    } else {
+      result = await runTextOnly();
+    }
 
     // Remove markdown code fences if present
     let cleanedText = result
@@ -666,6 +711,16 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+function base64ToBlob(base64, mimeType = 'image/jpeg') {
+  const byteCharacters = atob(base64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  return new Blob([byteArray], { type: mimeType });
 }
 
 function showLoading() {
