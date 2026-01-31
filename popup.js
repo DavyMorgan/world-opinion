@@ -145,8 +145,21 @@ async function analyzeCurrentTab() {
     updateProgress('filter', 'Filtering results...');
     const filteredMarkets = await filterAndRankEvents(markets, analysis);
 
+    // Fetch price history for all markets in parallel
+    const marketsWithHistory = await Promise.all(
+      filteredMarkets.map(async (event) => ({
+        ...event,
+        markets: await Promise.all(
+          event.markets.map(async (market) => ({
+            ...market,
+            priceHistory: await fetchPriceHistory(market.clobTokenId)
+          }))
+        )
+      }))
+    );
+
     // Display results
-    displayResults(analysis, filteredMarkets);
+    displayResults(analysis, marketsWithHistory);
 
   } catch (error) {
     console.error('Analysis error:', error);
@@ -569,8 +582,20 @@ async function searchPolymarketByKeyword(keyword) {
         // Skip placeholder entries (no trading activity)
         if (volume === 0 && probability === 50) continue;
 
+        // Parse clobTokenIds JSON string to get the first token
+        let clobTokenId = null;
+        if (market.clobTokenIds) {
+          try {
+            const tokenIds = JSON.parse(market.clobTokenIds);
+            clobTokenId = tokenIds?.[0];
+          } catch (e) {
+            console.error('Error parsing clobTokenIds:', e);
+          }
+        }
+
         markets.push({
           id: market.conditionId || market.id,
+          clobTokenId: clobTokenId,  // Token for "Yes" outcome (for price history)
           title: title,
           question: market.question,
           probability: probability,
@@ -612,6 +637,66 @@ function calculateProbabilityFromPrices(outcomePrices) {
     console.error('Error parsing prices:', e);
   }
   return 50;
+}
+
+// Fetch 7-day price history for a market (hourly granularity for smooth sparklines)
+async function fetchPriceHistory(clobTokenId) {
+  if (!clobTokenId) return null;
+
+  try {
+    const response = await fetch(
+      `https://clob.polymarket.com/prices-history?market=${clobTokenId}&interval=1w&fidelity=60`
+    );
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return data.history || [];
+  } catch (error) {
+    console.error('Error fetching price history:', error);
+    return null;
+  }
+}
+
+// Generate SVG sparkline from price history
+function generateSparkline(history, width = 60, height = 20) {
+  if (!history || history.length < 2) return '';
+
+  const prices = history.map(h => h.p);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 0.01;
+
+  // Normalize points to SVG coordinates
+  const points = prices.map((p, i) => {
+    const x = (i / (prices.length - 1)) * width;
+    const y = height - ((p - min) / range) * height;
+    return `${x},${y}`;
+  }).join(' ');
+
+  // Determine color: green if up, red if down
+  const trend = prices[prices.length - 1] >= prices[0] ? '#22c55e' : '#ef4444';
+
+  return `
+    <svg width="${width}" height="${height}" class="sparkline">
+      <polyline fill="none" stroke="${trend}" stroke-width="1.5" points="${points}"/>
+    </svg>
+  `;
+}
+
+// Calculate price change from history
+function calculatePriceChange(history) {
+  if (!history || history.length < 2) return null;
+
+  const oldest = history[0].p;
+  const newest = history[history.length - 1].p;
+  const change = ((newest - oldest) / oldest) * 100;
+
+  return {
+    value: Math.abs(change).toFixed(1),
+    direction: change >= 0 ? 'up' : 'down',
+    arrow: change >= 0 ? '↑' : '↓'
+  };
 }
 
 function displayResults(analysis, events) {
@@ -664,13 +749,17 @@ function displayResults(analysis, events) {
               </div>
             </div>
             <div class="outcomes-table">
-              ${sortedMarkets.map(market => `
+              ${sortedMarkets.map(market => {
+                const priceChange = calculatePriceChange(market.priceHistory);
+                return `
                 <div class="outcome-row">
                   <span class="outcome-label">${escapeHtml(market.title)}</span>
                   <span class="outcome-probability">${market.probability}%</span>
+                  ${priceChange ? `<span class="price-change ${priceChange.direction}">${priceChange.arrow}${priceChange.value}%</span>` : '<span class="price-change-placeholder"></span>'}
+                  ${generateSparkline(market.priceHistory, 40, 16)}
                   <span class="outcome-volume">$${formatVolume(market.volume)}</span>
                 </div>
-              `).join('')}
+              `}).join('')}
             </div>
             <a href="${event.url}" target="_blank" class="market-link">View on Polymarket →</a>
           </div>
@@ -678,10 +767,15 @@ function displayResults(analysis, events) {
       } else {
         // For single-market events, use original card style
         const market = sortedMarkets[0];
+        const priceChange = calculatePriceChange(market.priceHistory);
         return `
           <div class="market-card">
             <div class="market-title">${escapeHtml(market.question || event.eventTitle)}</div>
-            <div class="market-probability">${market.probability}%</div>
+            <div class="market-probability-row">
+              <span class="market-probability">${market.probability}%</span>
+              ${priceChange ? `<span class="price-change ${priceChange.direction}">${priceChange.arrow}${priceChange.value}%</span>` : ''}
+              ${generateSparkline(market.priceHistory)}
+            </div>
             <div class="market-info">
               <span>Volume: $${formatVolume(market.volume || event.eventVolume)}</span>
             </div>
