@@ -107,8 +107,12 @@ async function analyzeCurrentTab() {
     updateProgress('polymarket', 'Searching prediction markets...');
     const markets = await searchPolymarket(analysis.keywords);
 
+    // Filter and rank events by relevance
+    updateProgress('filter', 'Filtering results...');
+    const filteredMarkets = await filterAndRankEvents(markets, analysis);
+
     // Display results
-    displayResults(analysis, markets);
+    displayResults(analysis, filteredMarkets);
 
   } catch (error) {
     console.error('Analysis error:', error);
@@ -255,6 +259,58 @@ Format your response as JSON with the following structure:
   }
 }
 
+async function filterAndRankEvents(events, analysis) {
+  if (events.length === 0) return events;
+
+  const prompt = `Given this page analysis:
+Summary: ${analysis.summary}
+Keywords: ${analysis.keywords.join(', ')}
+Topics: ${analysis.topics.join(', ')}
+
+Here are prediction market events found. Return ONLY the ones that are genuinely relevant to the page content, ordered by relevance (most relevant first).
+
+Events:
+${events.map((e, i) => `${i + 1}. "${e.eventTitle}"`).join('\n')}
+
+Return a JSON array of the relevant event numbers in order of relevance, e.g. [3, 1, 5].
+Return an empty array [] if none are relevant.`;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 256 }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      console.error('Filter API error, returning unfiltered results');
+      return events.slice(0, 8);
+    }
+
+    const data = await response.json();
+    const text = data.candidates[0].content.parts[0].text;
+
+    // Parse JSON array from response
+    const match = text.match(/\[[\d,\s]*\]/);
+    if (!match) return events.slice(0, 8);
+
+    const indices = JSON.parse(match[0]);
+    return indices
+      .filter(i => i >= 1 && i <= events.length)
+      .map(i => events[i - 1])
+      .slice(0, 8);
+  } catch (error) {
+    console.error('Filter error, returning unfiltered results:', error);
+    return events.slice(0, 8);
+  }
+}
+
 async function searchPolymarket(keywords) {
   try {
     const allEvents = [];
@@ -288,7 +344,7 @@ async function searchPolymarket(keywords) {
     // Sort events by volume (highest first)
     // uniqueEvents.sort((a, b) => parseFloat(b.eventVolume) - parseFloat(a.eventVolume));
 
-    return uniqueEvents.slice(0, 8);
+    return uniqueEvents;
 
   } catch (error) {
     console.error('Polymarket search error:', error);
@@ -494,7 +550,7 @@ function updateProgress(stage, text) {
   const connectors = document.querySelectorAll('.milestone-connector');
   const progressText = document.getElementById('progressText');
 
-  const stages = ['chrome', 'gemini', 'polymarket'];
+  const stages = ['chrome', 'gemini', 'polymarket', 'filter'];
   const stageIndex = stages.indexOf(stage);
 
   milestones.forEach((milestone, index) => {
