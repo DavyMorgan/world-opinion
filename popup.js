@@ -19,6 +19,13 @@ async function init() {
   showAnalysis = settings.showAnalysis || false;
   document.getElementById('showAnalysis').checked = showAnalysis;
 
+  // Check if Gemini Nano is available and show/hide the option
+  const nanoAvailable = await checkNanoAvailability();
+  const nanoOption = document.getElementById('nanoOption');
+  if (nanoAvailable) {
+    nanoOption.classList.remove('hidden');
+  }
+
   // Setup event listeners
   document.getElementById('settingsBtn').addEventListener('click', toggleSettings);
   document.getElementById('saveSettings').addEventListener('click', saveSettings);
@@ -31,6 +38,18 @@ async function init() {
     geminiModel = e.target.value;
     await chrome.storage.local.set({ geminiModel });
   });
+}
+
+// Check if Gemini Nano (Chrome's built-in LanguageModel) is available
+async function checkNanoAvailability() {
+  try {
+    if (typeof LanguageModel === 'undefined') return false;
+    const availability = await LanguageModel.availability();
+    return availability !== 'unavailable';
+  } catch (e) {
+    console.log('Gemini Nano not available:', e.message);
+    return false;
+  }
 }
 
 function toggleSettings() {
@@ -72,8 +91,10 @@ async function saveSettings() {
 }
 
 async function analyzeCurrentTab() {
-  // Check if API key is configured
-  if (!geminiApiKey) {
+  const usingNano = geminiModel === 'gemini-nano';
+
+  // Check if API key is configured (not required for Nano)
+  if (!usingNano && !geminiApiKey) {
     showError('Please configure your Gemini API key in settings first.');
     return;
   }
@@ -93,14 +114,19 @@ async function analyzeCurrentTab() {
       throw new Error('No active tab found');
     }
 
-    // Extract page content and capture screenshot
-    const [pageContent, screenshot] = await Promise.all([
-      extractPageContent(tab),
-      captureScreenshot()
-    ]);
+    // Extract page content and capture screenshot (skip screenshot for Nano - text only)
+    let pageContent, screenshot = null;
+    if (usingNano) {
+      pageContent = await extractPageContent(tab);
+    } else {
+      [pageContent, screenshot] = await Promise.all([
+        extractPageContent(tab),
+        captureScreenshot()
+      ]);
+    }
 
     // Stage 2: Gemini - Analyze with AI
-    updateProgress('gemini', 'Analyzing with AI...');
+    updateProgress('gemini', usingNano ? 'Analyzing with on-device AI...' : 'Analyzing with AI...');
     const analysis = await analyzeWithGemini(pageContent, tab.title, tab.url, screenshot);
 
     // Stage 3: Polymarket - Search markets
@@ -172,6 +198,11 @@ async function extractPageContent(tab) {
 }
 
 async function analyzeWithGemini(pageContent, pageTitle, pageUrl, screenshot) {
+  // Route to Nano if selected
+  if (geminiModel === 'gemini-nano') {
+    return await analyzeWithNano(pageContent, pageTitle, pageUrl);
+  }
+
   const prompt = `Analyze this web page (both the screenshot and extracted text) and extract key topics, entities, and events that could be related to prediction markets on Polymarket.
 
 Page Title: ${pageTitle}
@@ -256,8 +287,74 @@ Format your response as JSON with the following structure:
   }
 }
 
+// Analyze using Chrome's built-in Gemini Nano (text only, no screenshot)
+async function analyzeWithNano(pageContent, pageTitle, pageUrl) {
+  try {
+    const session = await LanguageModel.create({
+      temperature: 0.7,
+      topK: 3
+    });
+
+    // Truncate content more aggressively for smaller context window
+    const truncatedText = pageContent.text.substring(0, 3000);
+
+    const prompt = `Analyze this web page and extract key topics, entities, and events that could be related to prediction markets on Polymarket.
+
+Page Title: ${pageTitle}
+Page URL: ${pageUrl}
+Page Description: ${pageContent.description}
+
+Extracted Text:
+${truncatedText}
+
+Please provide:
+1. A brief summary (2-3 sentences) of what this page is about
+2. 3-5 keywords or phrases that could be used to search for related prediction markets
+
+Format your response as JSON with the following structure:
+{
+  "summary": "Brief summary here",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}`;
+
+    const result = await session.prompt(prompt);
+    session.destroy();
+
+    // Remove markdown code fences if present
+    let cleanedText = result
+      .replace(/^```json\s*/i, '')
+      .replace(/```\s*$/, '')
+      .trim();
+
+    // Try to extract JSON from the response
+    const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        console.error('JSON parse error:', e);
+      }
+    }
+
+    // Smarter fallback - try to extract summary from partial JSON
+    const summaryMatch = cleanedText.match(/"summary"\s*:\s*"([^"]+)/);
+    return {
+      summary: summaryMatch ? summaryMatch[1] : 'Unable to analyze this page.',
+      keywords: [pageTitle]
+    };
+  } catch (error) {
+    console.error('Gemini Nano error:', error);
+    throw new Error(`Failed to analyze content with Gemini Nano: ${error.message}`);
+  }
+}
+
 async function filterAndRankEvents(events, analysis) {
   if (events.length === 0) return events;
+
+  // Use Nano if selected for fully local experience
+  if (geminiModel === 'gemini-nano') {
+    return await filterWithNano(events, analysis);
+  }
 
   const prompt = `Given this page analysis:
 Summary: ${analysis.summary}
@@ -303,6 +400,44 @@ Return an empty array [] if none are relevant.`;
       .slice(0, 8);
   } catch (error) {
     console.error('Filter error, returning unfiltered results:', error);
+    return events.slice(0, 8);
+  }
+}
+
+// Filter events using Chrome's built-in Gemini Nano
+async function filterWithNano(events, analysis) {
+  try {
+    const session = await LanguageModel.create({
+      temperature: 0.1,
+      topK: 3
+    });
+
+    const prompt = `Given this page analysis:
+Summary: ${analysis.summary}
+Keywords: ${analysis.keywords.join(', ')}
+
+Here are prediction market events found. Return ONLY the ones that are genuinely relevant to the page content, ordered by relevance (most relevant first).
+
+Events:
+${events.map((e, i) => `${i + 1}. "${e.eventTitle}"`).join('\n')}
+
+Return a JSON array of the relevant event numbers in order of relevance, e.g. [3, 1, 5].
+Return an empty array [] if none are relevant.`;
+
+    const result = await session.prompt(prompt);
+    session.destroy();
+
+    // Parse JSON array from response
+    const match = result.match(/\[[\d,\s]*\]/);
+    if (!match) return events.slice(0, 8);
+
+    const indices = JSON.parse(match[0]);
+    return indices
+      .filter(i => i >= 1 && i <= events.length)
+      .map(i => events[i - 1])
+      .slice(0, 8);
+  } catch (error) {
+    console.error('Nano filter error, returning unfiltered results:', error);
     return events.slice(0, 8);
   }
 }
