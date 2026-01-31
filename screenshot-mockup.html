@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World Opinion - Screenshot Mockup</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .browser-frame {
+      background: #1a1a2e;
+      border-radius: 12px;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+      width: 1200px;
+    }
+
+    .browser-header {
+      background: linear-gradient(180deg, #2d2d44 0%, #252538 100%);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .browser-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .browser-button {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .browser-button.close { background: #ff5f57; }
+    .browser-button.minimize { background: #febc2e; }
+    .browser-button.maximize { background: #28c840; }
+
+    .browser-tabs {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .browser-tab {
+      background: #1a1a2e;
+      padding: 8px 16px;
+      border-radius: 8px 8px 0 0;
+      color: #fff;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .browser-tab img {
+      width: 16px;
+      height: 16px;
+    }
+
+    .url-bar {
+      background: #1a1a2e;
+      border-radius: 20px;
+      padding: 8px 16px;
+      color: #888;
+      font-size: 13px;
+      width: 400px;
+    }
+
+    .browser-content {
+      display: flex;
+      background: #f5f5f5;
+    }
+
+    .page-content {
+      flex: 1;
+      padding: 25px;
+      background: white;
+    }
+
+    .article-header {
+      margin-bottom: 20px;
+    }
+
+    .article-category {
+      color: #bb1919;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .article-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a1a;
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+
+    .article-meta {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .article-image {
+      width: 100%;
+      height: 180px;
+      border-radius: 8px;
+      margin: 15px 0;
+      object-fit: cover;
+    }
+
+    .article-text {
+      font-size: 16px;
+      line-height: 1.8;
+      color: #333;
+    }
+
+    .extension-popup {
+      width: 380px;
+      background: white;
+      border-left: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -5px 0 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .extension-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px 20px;
+      text-align: center;
+    }
+
+    .extension-header h2 {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    .extension-header p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .extension-content {
+      padding: 15px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .section {
+      margin-bottom: 12px;
+      padding: 12px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .section h3 {
+      font-size: 14px;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .section p {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #555;
+    }
+
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 4px 10px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.12) 100%);
+      border: 1px solid rgba(102, 126, 234, 0.25);
+      border-radius: 12px;
+      font-size: 12px;
+      color: #667eea;
+      font-weight: 500;
+    }
+
+    .market-card {
+      background: white;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .market-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .market-title {
+      font-weight: 600;
+      font-size: 13px;
+      color: #333;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .market-probability {
+      font-size: 24px;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 2px;
+    }
+
+    .market-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #888;
+    }
+
+    .market-link {
+      color: #667eea;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 8px;
+      display: inline-block;
+    }
+
+    .powered-by {
+      text-align: center;
+      padding: 12px;
+      border-top: 1px solid #e0e0e0;
+      font-size: 11px;
+      color: #888;
+    }
+
+    .powered-by img {
+      height: 16px;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 8px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="browser-frame">
+    <div class="browser-header">
+      <div class="browser-buttons">
+        <div class="browser-button close"></div>
+        <div class="browser-button minimize"></div>
+        <div class="browser-button maximize"></div>
+      </div>
+      <div class="browser-tabs">
+        <div class="browser-tab">
+          <span>BBC News - US Election 2026</span>
+        </div>
+      </div>
+      <div class="url-bar">bbc.com/news/world-us-election-2026</div>
+    </div>
+    <div class="browser-content">
+      <div class="page-content">
+        <div class="article-header">
+          <div class="article-category">US Election 2026</div>
+          <h1 class="article-title">2026 Midterm Elections: Key Senate Races to Watch</h1>
+          <div class="article-meta">Published 3 hours ago | Politics</div>
+        </div>
+        <img class="article-image" src="https://images.unsplash.com/photo-1501466044931-62695aada8e9?w=800&h=400&fit=crop" alt="White House">
+        <p class="article-text">
+          As the 2026 midterm elections approach, several key Senate races are emerging as crucial battlegrounds that could determine the balance of power in Congress. Political analysts are closely watching competitive races in swing states where control of the chamber hangs in the balance...
+        </p>
+      </div>
+      <div class="extension-popup">
+        <div class="extension-header">
+          <h2>World Opinion</h2>
+          <p>Prediction Markets for This Page</p>
+        </div>
+        <div class="extension-content">
+          <div class="section">
+            <h3>Content Analysis</h3>
+            <p>This article discusses the upcoming 2026 US midterm elections, focusing on competitive Senate races and their potential impact on Congressional control.</p>
+          </div>
+
+          <div class="section">
+            <h3>Keywords</h3>
+            <div class="tags-container">
+              <span class="tag">Senate 2026</span>
+              <span class="tag">Midterm Elections</span>
+              <span class="tag">Congress</span>
+              <span class="tag">US Politics</span>
+            </div>
+          </div>
+
+          <div class="section" style="background: transparent; border: none; padding: 0;">
+            <h3 style="margin-bottom: 12px;">Related Markets <span class="badge">Live</span></h3>
+
+            <div class="market-card">
+              <div class="market-title">Which party will control the Senate after 2026 midterms?</div>
+              <div class="market-probability">52%</div>
+              <div style="font-size: 12px; color: #666; margin-bottom: 8px;">Democrats</div>
+              <div class="market-info">
+                <span>$2.4M Volume</span>
+                <span>12,847 traders</span>
+              </div>
+              <a href="#" class="market-link">View on Polymarket →</a>
+            </div>
+
+            <div class="market-card">
+              <div class="market-title">Will voter turnout exceed 45% in 2026 midterms?</div>
+              <div class="market-probability">67%</div>
+              <div style="font-size: 12px; color: #666; margin-bottom: 8px;">Yes</div>
+              <div class="market-info">
+                <span>$892K Volume</span>
+                <span>5,234 traders</span>
+              </div>
+              <a href="#" class="market-link">View on Polymarket →</a>
+            </div>
+
+          </div>
+        </div>
+        <div class="powered-by">
+          Powered by Gemini AI & Polymarket
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
