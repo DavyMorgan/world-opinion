@@ -2,14 +2,19 @@
 document.addEventListener('DOMContentLoaded', init);
 
 let geminiApiKey = '';
+let geminiModel = 'gemini-3-flash-preview';
 let showAnalysis = false;
 
 async function init() {
   // Load saved settings
-  const settings = await chrome.storage.local.get(['geminiApiKey', 'showAnalysis']);
+  const settings = await chrome.storage.local.get(['geminiApiKey', 'geminiModel', 'showAnalysis']);
   if (settings.geminiApiKey) {
     geminiApiKey = settings.geminiApiKey;
     document.getElementById('geminiKey').value = '••••••••';
+  }
+  if (settings.geminiModel) {
+    geminiModel = settings.geminiModel;
+    document.getElementById('geminiModel').value = geminiModel;
   }
   showAnalysis = settings.showAnalysis || false;
   document.getElementById('showAnalysis').checked = showAnalysis;
@@ -21,6 +26,10 @@ async function init() {
   document.getElementById('showAnalysis').addEventListener('change', async (e) => {
     showAnalysis = e.target.checked;
     await chrome.storage.local.set({ showAnalysis });
+  });
+  document.getElementById('geminiModel').addEventListener('change', async (e) => {
+    geminiModel = e.target.value;
+    await chrome.storage.local.set({ geminiModel });
   });
 }
 
@@ -193,7 +202,7 @@ Format your response as JSON with the following structure:
   }
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
