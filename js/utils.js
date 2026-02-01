@@ -20,6 +20,7 @@ const Utils = {
    * @returns {string} Normalized URL
    */
   normalizeUrl(url) {
+    if (!url) return '';
     try {
       const urlObj = new URL(url);
 
