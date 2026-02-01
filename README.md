@@ -21,27 +21,32 @@ A Chrome extension that analyzes the current tab, finds related prediction marke
 ### Prerequisites
 
 - Google Chrome browser
-- Gemini API key (get one from [Google AI Studio](https://makersuite.google.com/app/apikey))
+- Gemini API key (get one from [Google AI Studio](https://aistudio.google.com/app/apikey))
 
-### Steps
+### Option 1: Download CRX (Recommended)
 
-1. **Clone or download this repository**
+1. Download `world-opinion.crx` from the [latest release](https://github.com/DavyMorgan/world-opinion/releases/latest)
+2. Open Chrome and navigate to `chrome://extensions/`
+3. Enable "Developer mode" (toggle in the top right)
+4. Drag and drop the `.crx` file onto the page
+
+### Option 2: Load Unpacked (For Developers)
+
+1. Clone or download this repository
    ```bash
-   git clone https://github.com/DavyMorgan/market-insight.git
-   cd market-insight
+   git clone https://github.com/DavyMorgan/world-opinion.git
+   cd world-opinion
    ```
+2. Open Chrome and navigate to `chrome://extensions/`
+3. Enable "Developer mode" (toggle in the top right)
+4. Click "Load unpacked" and select the project directory
 
-2. **Load the extension in Chrome**
-   - Open Chrome and navigate to `chrome://extensions/`
-   - Enable "Developer mode" (toggle in the top right)
-   - Click "Load unpacked"
-   - Select the `market-insight` directory
+### Configure Your API Key
 
-3. **Configure your API key**
-   - Click the World Opinion extension icon in your Chrome toolbar
-   - Click the ⚙️ Settings button
-   - Enter your Gemini API key
-   - Click "Save Settings"
+1. Click the World Opinion extension icon in your Chrome toolbar
+2. Click the ⚙️ Settings button
+3. Enter your Gemini API key
+4. Click "Save Settings"
 
 ## Usage
 
