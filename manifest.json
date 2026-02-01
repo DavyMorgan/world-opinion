@@ -20,7 +20,7 @@
     }
   },
   "side_panel": {
-    "default_path": "popup.html"
+    "default_path": "sidepanel.html"
   },
   "background": {
     "service_worker": "background.js"

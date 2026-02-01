@@ -20,7 +20,7 @@ This is a vanilla JavaScript Chrome extension with no build system, package mana
 ## Architecture
 
 ```
-User clicks "Analyze" → popup.js orchestrates:
+User clicks "Analyze" → js/app.js orchestrates:
   1. Content extraction (inject script into active tab)
   2. Gemini API analysis (extract keywords/topics)
   3. Polymarket API search (find matching markets)
@@ -29,8 +29,8 @@ User clicks "Analyze" → popup.js orchestrates:
 
 ### Key Files
 
-- **popup.js** (337 lines): Main application logic - content extraction, API calls, results rendering
-- **popup.html/css**: Extension popup UI with gradient theme
+- **js/app.js**: Main application entry point - orchestrates content extraction, API calls, results rendering
+- **sidepanel.html/css**: Extension side panel UI with gradient theme
 - **background.js**: Minimal service worker (placeholder for future expansion)
 - **manifest.json**: Manifest V3 config with `activeTab`, `storage`, `scripting` permissions
 

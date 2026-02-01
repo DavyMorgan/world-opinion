@@ -123,8 +123,8 @@ See our full [Privacy Policy](PRIVACY_POLICY.md) for complete details.
 ```
 world-opinion/
 ├── manifest.json          # Chrome extension manifest (V3)
-├── popup.html             # Extension popup UI
-├── popup.css              # Popup styling
+├── sidepanel.html         # Extension side panel UI
+├── sidepanel.css          # Side panel styling
 ├── background.js          # Background service worker
 ├── index.html             # Landing page
 ├── js/                    # JavaScript modules
