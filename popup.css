@@ -938,3 +938,11 @@ footer {
     display: none;
   }
 }
+
+.privacy-note {
+  font-size: 11px;
+  color: #888;
+  margin-top: 12px;
+  line-height: 1.4;
+  text-align: center;
+}

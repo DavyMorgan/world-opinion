@@ -29,7 +29,8 @@ const UI = {
       apiKeyGroup: document.getElementById('apiKeyGroup'),
       nanoOption: document.getElementById('nanoOption'),
       saveBtn: document.getElementById('saveSettings'),
-      refreshBtn: document.getElementById('refreshBtn')
+      refreshBtn: document.getElementById('refreshBtn'),
+      privacyNote: document.getElementById('privacyNote')
     };
   },
 
@@ -279,13 +280,15 @@ const UI = {
   },
 
   /**
-   * Update API key input visibility based on model
+   * Update API key input visibility and privacy note based on model
    */
   updateApiKeyVisibility() {
     if (AppState.isUsingNano()) {
       this.elements.apiKeyGroup.classList.add('hidden');
+      this.elements.privacyNote.textContent = 'Your data stays on your device — nothing is sent to the cloud.';
     } else {
       this.elements.apiKeyGroup.classList.remove('hidden');
+      this.elements.privacyNote.textContent = 'Your data goes directly to Gemini — we never see what you analyze.';
     }
   },
 

@@ -20,3 +20,6 @@ build/
 # Environment
 .env
 .env.local
+
+# Reference files
+ref/
