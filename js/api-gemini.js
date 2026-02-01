@@ -47,7 +47,7 @@ Format your response as JSON with the following structure:
 Summary: ${analysis.summary}
 Keywords: ${analysis.keywords.join(', ')}
 
-Here are prediction market events found. Return ONLY the ones that are genuinely relevant to the page content, ordered by relevance (most relevant first).
+Here are prediction market events found. Remove the ones that are obviously unrelated to the page content, and return the rest ordered by relevance (most relevant first).
 
 Events:
 ${events.map((e, i) => `${i + 1}. "${e.eventTitle}"`).join('\n')}
