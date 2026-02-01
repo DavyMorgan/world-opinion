@@ -12,11 +12,9 @@ A Chrome extension that analyzes the current tab, finds related prediction marke
 - 🔒 **Privacy-First**: No backend servers, no data collection, no tracking—all processing happens directly in your browser
 - 🏠 **On-Device AI Option**: Use Gemini Nano for 100% local analysis—your data never leaves your device
 
-## Screenshots
+## Screenshot
 
-![Analysis in progress](screenshots/screenshot1.png)
-
-![Analysis results with prediction markets](screenshots/screenshot2.png)
+![World Opinion extension](screenshots/screenshot.png)
 
 ## Installation
 
