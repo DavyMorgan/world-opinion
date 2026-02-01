@@ -2,6 +2,8 @@
 
 A Chrome extension that analyzes the current tab, finds related prediction markets on Polymarket, and displays the current probability. The analysis is performed using the Gemini API, and prediction market data is accessed through the Polymarket API.
 
+🌐 **Project Page**: [davymorgan.github.io/world-opinion](https://davymorgan.github.io/world-opinion/) | 📦 **Repository**: [github.com/DavyMorgan/world-opinion](https://github.com/DavyMorgan/world-opinion)
+
 ## Features
 
 - 🔍 **Smart Content Analysis**: Uses Google's Gemini AI to analyze the current web page and extract relevant topics
@@ -119,17 +121,30 @@ See our full [Privacy Policy](PRIVACY_POLICY.md) for complete details.
 ### Project Structure
 
 ```
-market-insight/
-├── manifest.json       # Chrome extension manifest
-├── popup.html         # Extension popup UI
-├── popup.css          # Popup styling
-├── popup.js           # Main popup logic and API integration
-├── background.js      # Background service worker
-├── icons/             # Extension icons
+world-opinion/
+├── manifest.json          # Chrome extension manifest (V3)
+├── popup.html             # Extension popup UI
+├── popup.css              # Popup styling
+├── background.js          # Background service worker
+├── index.html             # Landing page
+├── js/                    # JavaScript modules
+│   ├── app.js             # Main application entry point
+│   ├── api-gemini.js      # Gemini API integration
+│   ├── api-polymarket.js  # Polymarket API integration
+│   ├── cache.js           # Caching utilities
+│   ├── config.js          # Configuration constants
+│   ├── state.js           # State management
+│   ├── ui.js              # UI rendering logic
+│   └── utils.js           # Helper functions
+├── icons/                 # Extension icons
+│   ├── icon.svg           # Source icon (transparent)
 │   ├── icon16.png
 │   ├── icon48.png
 │   └── icon128.png
-└── README.md          # This file
+├── assets/                # Landing page assets
+├── screenshots/           # Store screenshots
+├── PRIVACY_POLICY.md      # Privacy policy
+└── README.md              # This file
 ```
 
 ### Technologies Used
