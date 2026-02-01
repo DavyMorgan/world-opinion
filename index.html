@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Opinion - See How World Says</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background:
+                url('assets/world.svg') center/100% auto no-repeat,
+                linear-gradient(135deg, #e8f4fc 0%, #f0f5fa 50%, #e0eaf5 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+            width: 61.8vw;
+        }
+        h1 {
+            color: #000;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .tagline {
+            color: #000;
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+        }
+        .screenshot {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            margin-bottom: 2rem;
+        }
+        .buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-flex;
+            align-items: center;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4A90D9 0%, #5BA3E8 50%, #3A7BC0 100%);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 217, 0.4);
+        }
+        .btn-disabled {
+            background: rgba(74, 144, 217, 0.2);
+            color: rgba(74, 144, 217, 0.6);
+            cursor: not-allowed;
+        }
+        .btn-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+        }
+        .btn-disabled .btn-icon {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>World Opinion</h1>
+        <p class="tagline">Sync with the World</p>
+        <img src="screenshots/screenshot.png" alt="World Opinion screenshot" class="screenshot">
+        <div class="buttons">
+            <a href="https://github.com/DavyMorgan/world-opinion" class="btn btn-primary"><img src="assets/github.svg" alt="" class="btn-icon">View on GitHub</a>
+            <span class="btn btn-disabled"><img src="assets/chrome-web-store.svg" alt="" class="btn-icon">Chrome Web Store - Coming Soon</span>
+        </div>
+    </div>
+</body>
+</html>
