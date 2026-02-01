@@ -202,7 +202,7 @@ const UI = {
         <div class="event-header">
           ${event.eventImage ? `<img class="event-image" src="${event.eventImage}" alt="" />` : ''}
           <div class="event-info">
-            <div class="event-title">${Utils.escapeHtml(event.eventTitle)}</div>
+            <a href="${event.url}" target="_blank" class="event-title">${Utils.escapeHtml(event.eventTitle)}</a>
             <div class="event-volume">$${Utils.formatVolume(event.eventVolume)} Vol.</div>
           </div>
         </div>
@@ -226,7 +226,6 @@ const UI = {
             </div>
           `}).join('')}
         </div>
-        <a href="${event.url}" target="_blank" class="market-link">View on Polymarket \u2192</a>
       </div>
     `;
   },
@@ -239,7 +238,7 @@ const UI = {
     const priceChange = Utils.calculatePriceChange(market.priceHistory);
     return `
       <div class="market-card">
-        <div class="market-title">${Utils.escapeHtml(market.question || event.eventTitle)}</div>
+        <a href="${event.url}" target="_blank" class="market-title">${Utils.escapeHtml(market.question || event.eventTitle)}</a>
         <div class="market-probability-row">
           <div class="probability-circle large" style="--progress: ${market.probability}">
             <svg viewBox="0 0 36 36">
@@ -255,7 +254,6 @@ const UI = {
         <div class="market-info">
           <span>Volume: $${Utils.formatVolume(market.volume || event.eventVolume)}</span>
         </div>
-        <a href="${event.url}" target="_blank" class="market-link">View on Polymarket \u2192</a>
       </div>
     `;
   },

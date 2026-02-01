@@ -474,6 +474,12 @@ footer {
   color: #333;
   margin-bottom: 8px;
   line-height: 1.4;
+  text-decoration: none;
+  display: block;
+}
+
+.market-title:hover {
+  color: #667eea;
 }
 
 /* Circular Progress Indicator */
@@ -529,19 +535,6 @@ footer {
   font-size: 12px;
   color: #888;
   margin-top: 8px;
-}
-
-.market-link {
-  display: inline-block;
-  margin-top: 8px;
-  color: #667eea;
-  text-decoration: none;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.market-link:hover {
-  text-decoration: underline;
 }
 
 .error {
@@ -692,6 +685,11 @@ footer {
   color: #333;
   line-height: 1.4;
   margin-bottom: 4px;
+  text-decoration: none;
+}
+
+.event-title:hover {
+  color: #667eea;
 }
 
 .event-volume {
