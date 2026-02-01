@@ -9,6 +9,8 @@ A Chrome extension that analyzes the current tab, finds related prediction marke
 - 💹 **Real-time Probabilities**: Displays current market probabilities for related predictions
 - ⚙️ **Easy Configuration**: Simple setup with your Gemini API key
 - 🎨 **Modern UI**: Clean, intuitive interface with gradient design
+- 🔒 **Privacy-First**: No backend servers, no data collection, no tracking—all processing happens directly in your browser
+- 🏠 **On-Device AI Option**: Use Gemini Nano for 100% local analysis—your data never leaves your device
 
 ## Screenshots
 
@@ -77,10 +79,37 @@ The extension queries Polymarket's CLOB (Central Limit Order Book) API to:
 
 ## Privacy & Security
 
-- Your Gemini API key is stored locally in Chrome's storage (never sent to external servers except Google's API)
-- Page content is only sent to the Gemini API for analysis
-- No personal data is collected or transmitted to third parties
-- All API calls are made directly from your browser
+**World Opinion is designed with privacy as a core principle.** Unlike many extensions that route your data through their servers, World Opinion has **no backend servers**—all processing happens directly in your browser.
+
+### Why This Matters
+
+| Traditional Extensions | World Opinion |
+|------------------------|---------------|
+| Your data → Their servers → API | Your data → API directly |
+| They can log, analyze, sell your data | No intermediary, no data exposure |
+| Requires trusting the extension developer | Trust is verifiable (open source) |
+
+### Our Privacy Guarantees
+
+- **🚫 No Backend Servers**: Your data never touches our servers because we don't have any
+- **🔐 Local Storage Only**: Your API key is stored locally in Chrome's storage, never transmitted except to Google's API
+- **📡 Direct API Calls**: Page content goes directly from your browser to Google Gemini—no middleman
+- **🙈 No Tracking**: No analytics, no usage statistics, no cookies, no user accounts
+- **👆 User-Initiated Only**: Data is only processed when you click "Analyze"—never in the background
+- **📖 Open Source**: Review our code anytime to verify these claims
+
+### 🏠 Maximum Privacy: Gemini Nano (On-Device AI)
+
+For users who want **absolute privacy**, World Opinion supports **Gemini Nano**—Google's on-device AI model that runs entirely on your computer:
+
+- **Zero Network Transmission**: Your page content never leaves your device
+- **No API Key Required**: Works without any external service
+- **Instant Processing**: No network latency, faster results
+- **Available Automatically**: If your device supports Gemini Nano, it appears as an option in Settings
+
+With Gemini Nano, the only network calls are to Polymarket to fetch market data—the AI analysis happens 100% locally.
+
+See our full [Privacy Policy](PRIVACY_POLICY.md) for complete details.
 
 ## Development
 
