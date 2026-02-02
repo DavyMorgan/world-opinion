@@ -54,7 +54,7 @@ A Chrome extension that analyzes the current tab, finds related prediction marke
 
 1. Navigate to any web page you want to analyze (news article, blog post, etc.)
 2. Click the World Opinion extension icon
-3. Click "🔍 Analyze Current Tab"
+3. Click "🌍 See How World Says"
 4. Wait for the analysis to complete
 5. View related prediction markets and their current probabilities
 6. Click on any market to view it on Polymarket
@@ -100,7 +100,7 @@ The extension queries Polymarket's CLOB (Central Limit Order Book) API to:
 - **🔐 Local Storage Only**: Your API key is stored locally in Chrome's storage, never transmitted except to Google's API
 - **📡 Direct API Calls**: Page content goes directly from your browser to Google Gemini—no middleman
 - **🙈 No Tracking**: No analytics, no usage statistics, no cookies, no user accounts
-- **👆 User-Initiated Only**: Data is only processed when you click "Analyze"—never in the background
+- **👆 User-Initiated Only**: Data is only processed when you click "See How World Says"—never in the background
 - **📖 Open Source**: Review our code anytime to verify these claims
 
 ### 🏠 Maximum Privacy: Gemini Nano (On-Device AI)
@@ -140,7 +140,10 @@ world-opinion/
 │   ├── icon.svg           # Source icon (transparent)
 │   ├── icon16.png
 │   ├── icon48.png
-│   └── icon128.png
+│   ├── icon128.png
+│   ├── chrome.png         # Progress indicator icon
+│   ├── gemini.png         # Progress indicator icon
+│   └── polymarket.png     # Progress indicator icon
 ├── assets/                # Landing page assets
 ├── screenshots/           # Store screenshots
 ├── PRIVACY_POLICY.md      # Privacy policy
