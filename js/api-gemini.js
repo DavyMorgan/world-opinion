@@ -156,7 +156,11 @@ Return an empty array [] if none are relevant.`;
       if (screenshot) {
         try {
           const multimodalAvailability = await LanguageModel.availability({
-            expectedInputs: [{ type: 'image' }]
+            expectedInputs: [
+              { type: 'text', languages: ['en'] },
+              { type: 'image' }
+            ],
+            expectedOutputs: [{ type: 'text', languages: ['en'] }]
           });
           useMultimodal = multimodalAvailability !== 'unavailable';
           if (!useMultimodal) {
@@ -200,7 +204,8 @@ Return an empty array [] if none are relevant.`;
     const session = await LanguageModel.create({
       temperature: CONFIG.GEMINI_TEMPERATURE,
       topK: CONFIG.NANO_TOP_K,
-      outputLanguage: 'en'
+      expectedInputs: [{ type: 'text', languages: ['en'] }],
+      expectedOutputs: [{ type: 'text', languages: ['en'] }]
     });
     const prompt = this.buildAnalysisPrompt(pageContent, pageTitle, pageUrl, false);
     const result = await session.prompt(prompt);
@@ -216,11 +221,11 @@ Return an empty array [] if none are relevant.`;
     const session = await LanguageModel.create({
       temperature: CONFIG.GEMINI_TEMPERATURE,
       topK: CONFIG.NANO_TOP_K,
-      outputLanguage: 'en',
       expectedInputs: [
-        { type: 'text' },
+        { type: 'text', languages: ['en'] },
         { type: 'image' }
-      ]
+      ],
+      expectedOutputs: [{ type: 'text', languages: ['en'] }]
     });
 
     const imageBlob = Utils.base64ToBlob(screenshot);
@@ -287,7 +292,8 @@ Return an empty array [] if none are relevant.`;
       const session = await LanguageModel.create({
         temperature: CONFIG.FILTER_TEMPERATURE,
         topK: CONFIG.NANO_TOP_K,
-        outputLanguage: 'en'
+        expectedInputs: [{ type: 'text', languages: ['en'] }],
+        expectedOutputs: [{ type: 'text', languages: ['en'] }]
       });
 
       const prompt = this.buildFilterPrompt(analysis, events);

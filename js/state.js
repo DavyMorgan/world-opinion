@@ -70,7 +70,10 @@ const AppState = {
   async checkNanoAvailability() {
     try {
       if (typeof LanguageModel === 'undefined') return false;
-      const availability = await LanguageModel.availability();
+      const availability = await LanguageModel.availability({
+        expectedInputs: [{ type: 'text', languages: ['en'] }],
+        expectedOutputs: [{ type: 'text', languages: ['en'] }]
+      });
       return availability !== 'unavailable';
     } catch (e) {
       console.log('Gemini Nano not available:', e.message);
