@@ -60,6 +60,20 @@ footer {
   color: #667eea;
 }
 
+.settings-icon-btn.highlight {
+  animation: shake 0.5s ease-in-out 12, pulse-highlight 1.5s ease-in-out infinite;
+  color: #667eea;
+}
+
+@keyframes pulse-highlight {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(102, 126, 234, 0.6));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(102, 126, 234, 1));
+  }
+}
+
 .settings-panel {
   position: absolute;
   bottom: 50px;
@@ -211,9 +225,9 @@ footer {
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-4px); }
+  75% { transform: translateY(4px); }
 }
 
 #mainContent {

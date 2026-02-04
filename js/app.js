@@ -187,7 +187,8 @@ async function extractPageContent(tab) {
 async function analyzeCurrentTab(forceRefresh = false) {
   // Check if API key is configured (not required for Nano)
   if (!AppState.hasRequiredApiKey()) {
-    UI.showError('Please configure your Gemini API key in settings first.');
+    UI.showError('Please configure your Gemini API key in settings first.', false);
+    document.getElementById('settingsBtn').classList.add('highlight');
     return;
   }
 

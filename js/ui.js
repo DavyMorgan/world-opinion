@@ -277,6 +277,8 @@ const UI = {
    */
   toggleSettings() {
     this.elements.settingsPanel.classList.toggle('hidden');
+    // Remove highlight from settings button when settings panel is opened
+    document.getElementById('settingsBtn').classList.remove('highlight');
   },
 
   /**
@@ -391,10 +393,15 @@ const UI = {
   // ============ Error Handling ============
 
   /**
-   * Show error message with retry button
+   * Show error message with optional retry button
    * @param {string} message - Error message to display
+   * @param {boolean} showRetry - Whether to show the retry button (default: true)
    */
-  showError(message) {
+  showError(message, showRetry = true) {
+    const retryButton = showRetry
+      ? '<button class="btn-retry" id="retryBtn">Try Again</button>'
+      : '';
+
     this.elements.error.innerHTML = `
       <div class="error-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -404,18 +411,20 @@ const UI = {
         </svg>
       </div>
       <div class="error-message">${Utils.escapeHtml(message)}</div>
-      <button class="btn-retry" id="retryBtn">Try Again</button>
+      ${retryButton}
     `;
     this.elements.error.classList.remove('hidden');
 
-    // Bind retry button
-    document.getElementById('retryBtn').addEventListener('click', () => {
-      this.hideError();
-      // Trigger analysis through the global function
-      if (typeof analyzeCurrentTab === 'function') {
-        analyzeCurrentTab();
-      }
-    });
+    // Bind retry button if shown
+    if (showRetry) {
+      document.getElementById('retryBtn').addEventListener('click', () => {
+        this.hideError();
+        // Trigger analysis through the global function
+        if (typeof analyzeCurrentTab === 'function') {
+          analyzeCurrentTab();
+        }
+      });
+    }
   },
 
   /**
