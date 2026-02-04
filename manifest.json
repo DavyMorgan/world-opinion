@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "World Opinion",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Analyze current tab and find related prediction markets on Polymarket",
   "permissions": [
     "activeTab",
