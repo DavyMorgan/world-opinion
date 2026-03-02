@@ -72,6 +72,8 @@
           <div id="keywordsList" class="tags-container"></div>
         </div>
 
+        <div id="agentDebugLog" class="section hidden"></div>
+
         <div id="markets" class="section">
           <div id="marketsList"></div>
         </div>
@@ -121,8 +123,15 @@
           </button>
         </div>
       </div>
+      <div class="setting-row" id="agenticModeRow">
+        <label for="agenticMode">Agentic Mode</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="agenticMode">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
       <div class="setting-row">
-        <label for="showAnalysis">Show Content Analysis and Keywords</label>
+        <label for="showAnalysis" id="showAnalysisLabel">Show Debug Info</label>
         <label class="toggle-switch">
           <input type="checkbox" id="showAnalysis">
           <span class="toggle-slider"></span>

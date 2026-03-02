@@ -6,6 +6,7 @@ const AppState = {
   geminiApiKey: '',
   geminiModel: 'gemini-3-flash-preview',
   showAnalysis: false,
+  agenticMode: false,
 
   // Track when fallback to rule-based analysis is used
   fallbackUsed: {
@@ -24,7 +25,7 @@ const AppState = {
    * Load state from Chrome storage
    */
   async load() {
-    const settings = await chrome.storage.local.get(['geminiApiKey', 'geminiModel', 'showAnalysis']);
+    const settings = await chrome.storage.local.get(['geminiApiKey', 'geminiModel', 'showAnalysis', 'agenticMode']);
 
     if (settings.geminiApiKey) {
       this.geminiApiKey = settings.geminiApiKey;
@@ -33,6 +34,7 @@ const AppState = {
       this.geminiModel = settings.geminiModel;
     }
     this.showAnalysis = settings.showAnalysis || false;
+    this.agenticMode = settings.agenticMode || false;
   },
 
   /**
@@ -61,6 +63,14 @@ const AppState = {
     // Nano doesn't require API key
     if (this.isUsingNano()) return true;
     return Boolean(this.geminiApiKey);
+  },
+
+  /**
+   * Check if agentic mode is available (requires cloud API, not Nano)
+   * @returns {boolean}
+   */
+  isAgenticAvailable() {
+    return !this.isUsingNano() && Boolean(this.geminiApiKey);
   },
 
   /**

@@ -48,7 +48,46 @@ const CONFIG = {
   POLYMARKET_PRICE_HISTORY_API: 'https://clob.polymarket.com/prices-history',
 
   // Progress stages
-  STAGES: ['chrome', 'gemini', 'polymarket', 'filter']
+  STAGES: ['chrome', 'gemini', 'polymarket', 'filter'],
+
+  // Agent mode settings
+  AGENT_MAX_ITERATIONS: 20,
+  AGENT_MAX_SEARCHES: 8,
+  AGENT_TEMPERATURE: 0.7,
+  AGENT_MAX_TOKENS: 65536,
+
+  AGENT_TOOL_DECLARATION: {
+    functionDeclarations: [{
+      name: 'search_polymarket',
+      description: 'Search Polymarket prediction markets using one or more search queries. Results are automatically deduplicated across queries.',
+      parameters: {
+        type: 'OBJECT',
+        properties: {
+          queries: {
+            type: 'ARRAY',
+            description: 'Array of 1-5 search queries for prediction markets. Each query should target different aspects of the content.',
+            items: { type: 'STRING' }
+          }
+        },
+        required: ['queries']
+      }
+    }]
+  },
+
+  AGENT_SYSTEM_PROMPT: `You are a prediction market analyst. Given a web page's content:
+1. Understand what the page is about
+2. Identify 3-5 diverse search queries covering different aspects of the content
+3. Call search_polymarket once with all your queries
+4. If results are poor, try again with different/refined queries
+5. Return your final analysis
+
+You MUST call search_polymarket at least once with an array of 3-5 queries. When done, respond with JSON (no tool calls):
+{
+  "summary": "2-3 sentence summary",
+  "keywords": ["keyword1", "keyword2", ...],
+  "relevant_event_ids": ["eventId1", "eventId2", ...]
+}
+List up to 8 most relevant eventId values, ordered by relevance.`
 };
 
 // Freeze to prevent accidental modification

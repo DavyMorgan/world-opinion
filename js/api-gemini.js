@@ -322,6 +322,169 @@ Return an empty array [] if none are relevant.`;
       .filter(i => i >= 1 && i <= events.length)
       .map(i => events[i - 1])
       .slice(0, CONFIG.MAX_MARKETS_TO_DISPLAY);
+  },
+
+  /**
+   * Run agentic ReAct loop with Gemini function calling
+   * @param {Object} pageContent - Extracted page content
+   * @param {string} pageTitle - Page title
+   * @param {string} pageUrl - Page URL
+   * @param {string|null} screenshot - Base64 encoded screenshot
+   * @param {Function} onProgress - Callback: (type, detail) where type is 'analyze'|'search'|'thought'|'search_result'
+   * @returns {Promise<{analysis: Object, markets: Array}>}
+   */
+  async runAgent(pageContent, pageTitle, pageUrl, screenshot, onProgress) {
+    const eventMap = new Map();
+    let searchCount = 0;
+
+    // Build initial user message with page content
+    const textContent = `Analyze this web page and find related prediction markets.
+
+Page Title: ${pageTitle}
+Page URL: ${pageUrl}
+Page Description: ${pageContent.description}
+
+Extracted Text:
+${pageContent.text}`;
+
+    const userParts = [{ text: textContent }];
+    if (screenshot) {
+      userParts.unshift({
+        inline_data: { mime_type: 'image/jpeg', data: screenshot }
+      });
+    }
+
+    const contents = [{ role: 'user', parts: userParts }];
+
+    for (let i = 0; i < CONFIG.AGENT_MAX_ITERATIONS; i++) {
+      onProgress('analyze');
+
+      const response = await fetch(
+        `${CONFIG.GEMINI_API_BASE}/${AppState.geminiModel}:generateContent?key=${AppState.geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: CONFIG.AGENT_SYSTEM_PROMPT }] },
+            contents: contents,
+            tools: [CONFIG.AGENT_TOOL_DECLARATION],
+            generationConfig: {
+              temperature: CONFIG.AGENT_TEMPERATURE,
+              maxOutputTokens: CONFIG.AGENT_MAX_TOKENS
+            }
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      const candidate = data.candidates[0];
+      const responseParts = candidate.content.parts;
+
+      // Add model response to conversation history
+      contents.push({ role: 'model', parts: responseParts });
+
+      // Check for function calls
+      const functionCall = responseParts.find(p => p.functionCall);
+
+      if (functionCall) {
+        const args = functionCall.functionCall.args;
+
+        // Support both new `queries` array and legacy `query` string
+        let queries = args.queries;
+        if (!queries) {
+          queries = [args.query || ''];
+        }
+
+        // Enforce per-call budget against AGENT_MAX_SEARCHES
+        const remainingSearches = CONFIG.AGENT_MAX_SEARCHES - searchCount;
+        const maxPerCall = Math.min(remainingSearches, CONFIG.MAX_KEYWORDS_TO_SEARCH);
+        const queriesToExecute = queries.slice(0, maxPerCall);
+        const queriesSkipped = queries.length - queriesToExecute.length;
+
+        let functionResponseData;
+        if (queriesToExecute.length === 0) {
+          functionResponseData = { error: 'Maximum search limit reached. Please provide your final analysis now.' };
+        } else {
+          // Emit progress for each query in the batch
+          for (const q of queriesToExecute) {
+            onProgress('search', q);
+          }
+
+          searchCount += queriesToExecute.length;
+          const events = await PolymarketService.search(queriesToExecute);
+
+          // Accumulate events
+          for (const event of events) {
+            if (!eventMap.has(event.eventId)) {
+              eventMap.set(event.eventId, event);
+            }
+          }
+
+          // Build concise summary for model context
+          const summary = events.map(e => ({
+            eventId: e.eventId,
+            title: e.eventTitle,
+            markets: e.markets.map(m => ({
+              title: m.title,
+              probability: m.probability
+            }))
+          }));
+
+          functionResponseData = {
+            results: summary,
+            count: events.length,
+            queries_executed: queriesToExecute.length,
+            queries_skipped: queriesSkipped
+          };
+          onProgress('search_result', { queries: queriesToExecute, count: events.length });
+        }
+
+        // Add function response to conversation
+        contents.push({
+          role: 'user',
+          parts: [{
+            functionResponse: {
+              name: 'search_polymarket',
+              response: functionResponseData
+            }
+          }]
+        });
+      } else {
+        // No function call — this is the final text answer
+        const textPart = responseParts.find(p => p.text);
+        const text = textPart ? textPart.text : '';
+
+        if (text) {
+          onProgress('thought', text);
+        }
+
+        const parsed = Utils.parseAnalysisResponse(text, pageTitle);
+        let markets;
+        if (parsed.relevant_event_ids && parsed.relevant_event_ids.length > 0) {
+          markets = parsed.relevant_event_ids
+            .map(id => eventMap.get(id))
+            .filter(Boolean)
+            .slice(0, CONFIG.MAX_MARKETS_TO_DISPLAY);
+        } else {
+          markets = Array.from(eventMap.values()).slice(0, CONFIG.MAX_MARKETS_TO_DISPLAY);
+        }
+        return { analysis: parsed, markets };
+      }
+
+      // If there was a thought text alongside a function call, log it
+      const thoughtPart = responseParts.find(p => p.text && p !== responseParts.find(pp => pp.functionCall));
+      if (thoughtPart) {
+        onProgress('thought', thoughtPart.text);
+      }
+    }
+
+    // Max iterations reached — return whatever we have
+    throw new Error('Agent reached maximum iterations without completing analysis.');
   }
 };
 

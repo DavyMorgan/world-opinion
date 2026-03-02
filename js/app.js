@@ -54,6 +54,12 @@ function setupEventListeners() {
   document.getElementById('geminiKey').addEventListener('input', () => {
     UI.updateSaveButtonState();
   });
+
+  document.getElementById('agenticMode').addEventListener('change', async (e) => {
+    await AppState.save('agenticMode', e.target.checked);
+    await CacheService.clearAll();
+    UI.updateAgenticModeVisibility();
+  });
 }
 
 /**
@@ -74,7 +80,7 @@ function setupTabChangeDetection() {
       // Display cached results
       UI.hideError();
       UI.hideFallbackNotice();
-      UI.displayResults(cached.analysis, cached.markets);
+      UI.displayResults(cached.analysis, cached.markets, cached.agentDebugEntries);
       UI.showRefreshButton();
     } else {
       // No cache - reset to initial state
@@ -214,7 +220,7 @@ async function analyzeCurrentTab(forceRefresh = false) {
       const cached = await CacheService.get(tab.url);
       if (cached) {
         // Display cached results immediately
-        UI.displayResults(cached.analysis, cached.markets);
+        UI.displayResults(cached.analysis, cached.markets, cached.agentDebugEntries);
         UI.showRefreshButton();
         return;
       }
@@ -233,39 +239,93 @@ async function analyzeCurrentTab(forceRefresh = false) {
       captureScreenshot()
     ]);
 
-    // Stage 2: Gemini - Analyze with AI
-    const usingNano = AppState.isUsingNano();
-    UI.updateProgress('gemini', usingNano ? 'Analyzing with on-device AI...' : 'Analyzing with AI...');
-    const analysis = await GeminiService.analyze(pageContent, tab.title, tab.url, screenshot);
+    let agentFailed = false;
 
-    // Stage 3: Polymarket - Search markets
-    UI.updateProgress('polymarket', 'Searching prediction markets...');
-    const markets = await PolymarketService.search(analysis.keywords);
+    if (AppState.agenticMode && !AppState.isUsingNano()) {
+      // ===== Agentic Mode =====
+      UI.initAgentMilestones();
 
-    // Stage 4: Filter - Rank events by relevance
-    UI.updateProgress('filter', 'Filtering results...');
-    const filteredMarkets = await GeminiService.filterEvents(markets, analysis);
+      const debugEntries = [];
 
-    // Fetch price history for all markets in parallel
-    const marketsWithHistory = await PolymarketService.enrichWithPriceHistory(filteredMarkets);
+      const onProgress = (type, detail) => {
+        if (type === 'analyze') {
+          UI.addAgentMilestone('analyze');
+        } else if (type === 'search') {
+          UI.addAgentMilestone('search', detail);
+          debugEntries.push({ type: 'search', text: `Search: "${detail}"` });
+        } else if (type === 'thought') {
+          debugEntries.push({ type: 'thought', text: detail });
+        } else if (type === 'search_result') {
+          const queriesText = Array.isArray(detail.queries)
+            ? detail.queries.map(q => `"${q}"`).join(', ')
+            : `"${detail.query || ''}"`;
+          debugEntries.push({ type: 'search_result', text: `Found ${detail.count} events for ${queriesText}` });
+        }
+      };
 
-    // Cache the results
-    await CacheService.set(tab.url, {
-      analysis: analysis,
-      markets: marketsWithHistory
-    });
+      try {
+        const result = await GeminiService.runAgent(pageContent, tab.title, tab.url, screenshot, onProgress);
 
-    // Display results
-    UI.displayResults(analysis, marketsWithHistory);
-    UI.showRefreshButton();
+        // Enrich with price history
+        const marketsWithHistory = await PolymarketService.enrichWithPriceHistory(result.markets);
 
-    // Show fallback notice if rule-based analysis was used
-    if (AppState.fallbackUsed.analysis || AppState.fallbackUsed.filter) {
-      UI.showFallbackNotice();
+        // Cache results with debug entries
+        await CacheService.set(tab.url, {
+          analysis: result.analysis,
+          markets: marketsWithHistory,
+          agentDebugEntries: debugEntries
+        });
+
+        UI.resetAgentMilestones();
+        UI.displayResults(result.analysis, marketsWithHistory, debugEntries);
+        UI.showRefreshButton();
+      } catch (agentError) {
+        console.warn('Agentic mode failed, falling back to fixed pipeline:', agentError.message);
+        UI.resetAgentMilestones();
+        agentFailed = true;
+      }
+    }
+
+    if (!AppState.agenticMode || AppState.isUsingNano() || agentFailed) {
+      // ===== Fixed Pipeline =====
+      // Stage 2: Gemini - Analyze with AI
+      const usingNano = AppState.isUsingNano();
+      UI.updateProgress('gemini', usingNano ? 'Analyzing with on-device AI...' : 'Analyzing with AI...');
+      const analysis = await GeminiService.analyze(pageContent, tab.title, tab.url, screenshot);
+
+      // Stage 3: Polymarket - Search markets
+      UI.updateProgress('polymarket', 'Searching prediction markets...');
+      const markets = await PolymarketService.search(analysis.keywords);
+
+      // Stage 4: Filter - Rank events by relevance
+      UI.updateProgress('filter', 'Filtering results...');
+      const filteredMarkets = await GeminiService.filterEvents(markets, analysis);
+
+      // Fetch price history for all markets in parallel
+      const marketsWithHistory = await PolymarketService.enrichWithPriceHistory(filteredMarkets);
+
+      // Cache the results
+      await CacheService.set(tab.url, {
+        analysis: analysis,
+        markets: marketsWithHistory
+      });
+
+      // Display results
+      UI.displayResults(analysis, marketsWithHistory);
+      UI.showRefreshButton();
+
+      // Show fallback notice — prefer the more actionable API-key guidance over the generic agent banner
+      if (AppState.fallbackUsed.analysis || AppState.fallbackUsed.filter) {
+        UI.showFallbackNotice();
+      } else if (agentFailed) {
+        UI.showFallbackNotice('Agentic mode encountered an issue. Showing results from standard analysis.');
+      }
     }
 
   } catch (error) {
     console.error('Analysis error:', error);
+    UI.resetAgentMilestones();
+    UI.hideFallbackNotice();
     UI.showError(error.message);
     UI.hideLoading();
   }

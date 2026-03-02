@@ -30,7 +30,11 @@ const UI = {
       nanoOption: document.getElementById('nanoOption'),
       saveBtn: document.getElementById('saveSettings'),
       refreshBtn: document.getElementById('refreshBtn'),
-      privacyNote: document.getElementById('privacyNote')
+      privacyNote: document.getElementById('privacyNote'),
+      agenticMode: document.getElementById('agenticMode'),
+      agenticModeRow: document.getElementById('agenticModeRow'),
+      agentDebugLog: document.getElementById('agentDebugLog'),
+      showAnalysisLabel: document.getElementById('showAnalysisLabel')
     };
   },
 
@@ -119,14 +123,24 @@ const UI = {
    * Display analysis and market results
    * @param {Object} analysis - Analysis result with summary and keywords
    * @param {Array} events - Market events to display
+   * @param {Array} [agentDebugEntries] - Optional agent debug log entries
    */
-  displayResults(analysis, events) {
+  displayResults(analysis, events, agentDebugEntries) {
     // Display analysis and keywords (conditionally)
     if (AppState.showAnalysis) {
-      this.renderAnalysis(analysis);
+      if (AppState.agenticMode && agentDebugEntries) {
+        // In agentic mode, show debug log instead of standard analysis
+        this.elements.analysis.classList.add('hidden');
+        this.elements.keywords.classList.add('hidden');
+        this.renderAgentDebugLog(agentDebugEntries);
+      } else {
+        this.renderAnalysis(analysis);
+        this.elements.agentDebugLog.classList.add('hidden');
+      }
     } else {
       this.elements.analysis.classList.add('hidden');
       this.elements.keywords.classList.add('hidden');
+      this.elements.agentDebugLog.classList.add('hidden');
     }
 
     // Display events/markets
@@ -292,6 +306,7 @@ const UI = {
       this.elements.apiKeyGroup.classList.remove('hidden');
       this.elements.privacyNote.textContent = 'Your data goes directly to Gemini — we never see what you analyze.';
     }
+    this.updateAgenticModeVisibility();
   },
 
   /**
@@ -352,6 +367,8 @@ const UI = {
 
     this.elements.geminiModel.value = AppState.geminiModel;
     this.elements.showAnalysis.checked = AppState.showAnalysis;
+    this.elements.agenticMode.checked = AppState.agenticMode;
+    this.updateAgenticModeVisibility();
   },
 
   /**
@@ -439,12 +456,12 @@ const UI = {
   /**
    * Show fallback notice when rule-based analysis is used
    */
-  showFallbackNotice() {
+  showFallbackNotice(message) {
     const notice = document.getElementById('fallbackNotice');
     if (!notice) return;
 
-    // Update API key placeholder to prompt user to fix their key
-    if (this.elements.geminiKey) {
+    // Update API key placeholder only for default (API-key-related) notices
+    if (!message && this.elements.geminiKey) {
       this.elements.geminiKey.placeholder = 'Enter your Gemini API key';
     }
 
@@ -455,7 +472,7 @@ const UI = {
           <line x1="12" y1="8" x2="12" y2="12"></line>
           <line x1="12" y1="16" x2="12.01" y2="16"></line>
         </svg>
-        <span class="fallback-notice-text">Using basic analysis mode. For better results, check your Gemini API key in settings.</span>
+        <span class="fallback-notice-text">${message || 'Using basic analysis mode. For better results, check your Gemini API key in settings.'}</span>
         <button class="fallback-notice-dismiss" title="Dismiss">&times;</button>
       </div>
     `;
@@ -474,6 +491,150 @@ const UI = {
     const notice = document.getElementById('fallbackNotice');
     if (notice) {
       notice.classList.add('hidden');
+    }
+  },
+
+  // ============ Agent Milestones ============
+
+  /** Original milestone HTML, saved for restoring */
+  _originalMilestoneHTML: null,
+  _agentMilestoneCount: 0,
+
+  /**
+   * Initialize scrolling agent milestones
+   * Replaces the fixed 4-step milestones with a dynamic strip
+   */
+  initAgentMilestones() {
+    const container = document.querySelector('.progress-milestones');
+    if (!container) return;
+
+    // Save original HTML for restoring later
+    this._originalMilestoneHTML = container.innerHTML;
+    this._agentMilestoneCount = 0;
+
+    // Replace with agent strip container
+    container.classList.add('agent-milestone-container');
+    container.innerHTML = `<div class="agent-milestone-strip"></div>`;
+
+    // Add "Extract" as first completed milestone
+    this.addAgentMilestone('extract');
+  },
+
+  /**
+   * Add a milestone to the agent strip
+   * @param {'extract'|'analyze'|'search'} type - Milestone type
+   * @param {string} [detail] - Optional detail (e.g. search query)
+   */
+  addAgentMilestone(type, detail) {
+    const strip = document.querySelector('.agent-milestone-strip');
+    if (!strip) return;
+
+    // Mark previous milestones as completed
+    strip.querySelectorAll('.milestone.active').forEach(m => {
+      m.classList.remove('active');
+      m.classList.add('completed');
+    });
+    strip.querySelectorAll('.milestone-connector:last-of-type').forEach(c => {
+      c.classList.add('active');
+    });
+
+    // Add connector if not the first milestone
+    if (this._agentMilestoneCount > 0) {
+      const connector = document.createElement('div');
+      connector.className = 'milestone-connector active';
+      strip.appendChild(connector);
+    }
+
+    // Determine icon and label
+    const iconMap = {
+      extract: { src: 'icons/chrome.png', alt: 'Chrome', label: 'Extract' },
+      analyze: { src: 'icons/gemini.png', alt: 'Gemini', label: 'Analyze' },
+      search: { src: 'icons/polymarket.png', alt: 'Polymarket', label: 'Search' }
+    };
+    const info = iconMap[type] || iconMap.analyze;
+
+    const milestone = document.createElement('div');
+    milestone.className = 'milestone active';
+    milestone.innerHTML = `
+      <div class="milestone-icon">
+        <img src="${info.src}" alt="${info.alt}">
+      </div>
+      <span class="milestone-label">${info.label}</span>
+    `;
+    strip.appendChild(milestone);
+
+    this._agentMilestoneCount++;
+
+    // Translate strip left to keep active milestone visible
+    // Each milestone ~52px wide, each connector ~28px
+    const itemWidth = 52 + 28; // milestone + connector
+    const visibleSlots = 3;
+    const shift = Math.max(0, this._agentMilestoneCount - visibleSlots) * itemWidth;
+    strip.style.transform = `translateX(-${shift}px)`;
+
+    // Update progress text
+    if (this.elements.progressText) {
+      if (type === 'search' && detail) {
+        this.elements.progressText.textContent = `Searching: "${detail}"`;
+      } else if (type === 'analyze') {
+        this.elements.progressText.textContent = 'Agent is thinking...';
+      } else if (type === 'extract') {
+        this.elements.progressText.textContent = 'Extracting page content...';
+      }
+    }
+  },
+
+  /**
+   * Restore original 4-step milestones
+   */
+  resetAgentMilestones() {
+    const container = document.querySelector('.progress-milestones');
+    if (!container || !this._originalMilestoneHTML) return;
+
+    container.classList.remove('agent-milestone-container');
+    container.innerHTML = this._originalMilestoneHTML;
+    this._originalMilestoneHTML = null;
+    this._agentMilestoneCount = 0;
+  },
+
+  // ============ Agent Debug Log ============
+
+  /**
+   * Render agent debug log entries
+   * @param {Array<{type: string, text: string}>} entries - Debug log entries
+   */
+  renderAgentDebugLog(entries) {
+    if (!entries || entries.length === 0) {
+      this.elements.agentDebugLog.classList.add('hidden');
+      return;
+    }
+
+    const html = entries.map(entry => {
+      const cssClass = entry.type === 'thought' ? 'thought' : entry.type === 'search' ? 'search' : 'search-result';
+      const icon = entry.type === 'search' ? '<span class="debug-search-icon">&#x1F50D;</span> ' : '';
+      return `<div class="agent-debug-entry ${cssClass}">${icon}${Utils.escapeHtml(entry.text)}</div>`;
+    }).join('');
+
+    this.elements.agentDebugLog.innerHTML = `<h3>Agent Log</h3><div class="agent-debug-log">${html}</div>`;
+    this.elements.agentDebugLog.classList.remove('hidden');
+  },
+
+  // ============ Agentic Mode Settings ============
+
+  /**
+   * Update agentic mode toggle visibility based on model
+   */
+  updateAgenticModeVisibility() {
+    if (AppState.isUsingNano()) {
+      this.elements.agenticModeRow.classList.add('hidden');
+    } else {
+      this.elements.agenticModeRow.classList.remove('hidden');
+    }
+    if (this.elements.showAnalysisLabel) {
+      this.elements.showAnalysisLabel.textContent =
+        (AppState.agenticMode && !AppState.isUsingNano())
+          ? 'Show Debug Info'
+          : 'Show Analysis';
     }
   },
 

@@ -960,3 +960,54 @@ footer {
   line-height: 1.4;
   text-align: center;
 }
+
+/* Scrolling milestone strip for agentic mode */
+.agent-milestone-container {
+  overflow: hidden;
+  width: 100%;
+  justify-content: flex-start;
+  mask-image: linear-gradient(to right, transparent 0%, black 20%, black 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20%, black 100%);
+}
+
+.agent-milestone-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.4s ease;
+  padding: 20px 10px;
+}
+
+/* Agent debug log */
+.agent-debug-log {
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.agent-debug-entry {
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.03);
+  line-height: 1.4;
+}
+
+.agent-debug-entry.thought {
+  color: #666;
+  font-style: italic;
+}
+
+.agent-debug-entry.search {
+  color: #667eea;
+  font-weight: 500;
+}
+
+.agent-debug-entry.search-result {
+  color: #059669;
+  font-size: 11px;
+}
+
+.debug-search-icon {
+  margin-right: 2px;
+}
