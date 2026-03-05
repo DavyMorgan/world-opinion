@@ -2,7 +2,7 @@
 
 A Chrome extension that analyzes the current tab, finds related prediction markets on Polymarket, and displays the current probability. The analysis is performed using the Gemini API, and prediction market data is accessed through the Polymarket API.
 
-🌐 **Project Page**: [davymorgan.github.io/world-opinion](https://davymorgan.github.io/world-opinion/) | 🧩 **Chrome Web Store**: [Install Extension](https://chromewebstore.google.com/detail/world-opinion/mflfnnkpkkhcapmgaapjjhlncalfglce)
+🌐 **Project Page**: [wo.y3z.ai](https://wo.y3z.ai) | 🧩 **Chrome Web Store**: [Install Extension](https://chromewebstore.google.com/detail/world-opinion/mflfnnkpkkhcapmgaapjjhlncalfglce)
 
 ## Features
 
